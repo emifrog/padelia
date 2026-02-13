@@ -34,8 +34,6 @@ export function SuggestionsSection() {
             key={s.playerId}
             profile={s.profile}
             totalScore={s.totalScore}
-            levelScore={s.levelScore}
-            sideScore={s.sideScore}
           />
         ))}
       </div>

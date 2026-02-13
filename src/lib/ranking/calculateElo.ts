@@ -51,14 +51,6 @@ function levelToElo(level: number): number {
   return 400 + (level - 1) * 200
 }
 
-/**
- * Convert ELO points back to level (1-10).
- */
-function eloToLevel(elo: number): number {
-  const level = 1 + (elo - 400) / 200
-  return Math.round(Math.max(MIN_LEVEL, Math.min(MAX_LEVEL, level)) * 10) / 10
-}
-
 export interface EloMatchResult {
   /** Set scores as [team1, team2] per set */
   sets: Array<{ team1: number; team2: number }>
@@ -132,10 +124,8 @@ export function calculateEloChanges(
     // Base rating change
     let change = k * (actual - expected)
 
-    // Apply margin multiplier (only amplifies, doesn't change direction)
+    // Apply margin multiplier only to winners (amplifies gains, not losses)
     if (isWinner) {
-      change *= marginMultiplier
-    } else {
       change *= marginMultiplier
     }
 

@@ -1,25 +1,16 @@
 import { Card, Badge } from '@/components/ui'
 import { MapPin, Target } from 'lucide-react'
 import type { Profile } from '@/types'
-
-const SIDE_LABELS: Record<string, string> = {
-  left: 'Gauche',
-  right: 'Droite',
-  both: 'Les deux',
-}
+import { SIDE_LABELS } from '@/lib/constants/profile'
 
 interface PlayerSuggestionCardProps {
   profile: Profile
   totalScore: number
-  levelScore: number
-  sideScore: number
 }
 
 export function PlayerSuggestionCard({
   profile,
   totalScore,
-  levelScore,
-  sideScore,
 }: PlayerSuggestionCardProps) {
   return (
     <Card className="flex items-center gap-3 min-w-[200px]">

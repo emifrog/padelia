@@ -87,9 +87,8 @@ export default function MatchesPage() {
     setLoading(false)
   }, [statusFilter, typeFilter, levelFilter])
 
-  useEffect(() => {
-    loadMatches()
-  }, [loadMatches])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { loadMatches() }, [loadMatches])
 
   return (
     <>

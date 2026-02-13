@@ -22,7 +22,14 @@ export function WinRateRing({ wins, losses, matchesPlayed }: WinRateRingProps) {
     <Card className="flex items-center gap-5">
       {/* Ring */}
       <div className="relative shrink-0">
-        <svg width={size} height={size} className="-rotate-90">
+        <svg
+          width={size}
+          height={size}
+          className="-rotate-90"
+          role="img"
+          aria-label={`Taux de victoire : ${winRate}%`}
+        >
+          <title>Taux de victoire : {winRate}%</title>
           {/* Background ring */}
           <circle
             cx={size / 2}
@@ -46,7 +53,7 @@ export function WinRateRing({ wins, losses, matchesPlayed }: WinRateRingProps) {
             className="transition-all duration-700"
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
           <span className="text-xl font-bold text-primary">{winRate}%</span>
         </div>
       </div>

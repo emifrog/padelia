@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Trophy, Medal, Crown, ChevronUp, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Trophy, Medal, Crown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/layout/Header'
 import { Card, Badge } from '@/components/ui'
@@ -102,9 +102,8 @@ export default function RankingsPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => {
-    loadCities()
-  }, [loadCities])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadCities() }, [])
 
   useEffect(() => {
     if (selectedCity) {

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { calculateMatchScore, type PlayerForMatching, type MatchScoreResult } from '@/lib/matching/calculateMatchScore'
-import type { Profile, Availability } from '@/types'
+import type { Profile } from '@/types'
 
 interface SuggestedPlayer extends MatchScoreResult {
   profile: Profile
@@ -116,9 +116,8 @@ export function usePlayerSuggestions(limit = 10) {
     setLoading(false)
   }, [limit])
 
-  useEffect(() => {
-    loadSuggestions()
-  }, [loadSuggestions])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { loadSuggestions() }, [loadSuggestions])
 
   return { suggestions, loading, refresh: loadSuggestions }
 }

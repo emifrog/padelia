@@ -41,39 +41,3 @@ export function useMatchRealtime(matchId: string, onUpdate: () => void) {
     }
   }, [matchId, onUpdate])
 }
-
-/**
- * Subscribe to realtime match invitations for the current user.
- * Calls onInvitation when a new match_player row targets the user.
- */
-export function useMatchInvitations(
-  userId: string | null,
-  onInvitation: (matchId: string) => void,
-) {
-  useEffect(() => {
-    if (!userId) return
-
-    const supabase = createClient()
-
-    const channel = supabase
-      .channel(`invitations-${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'match_players',
-          filter: `player_id=eq.${userId}`,
-        },
-        (payload) => {
-          const matchId = payload.new?.match_id as string | undefined
-          if (matchId) onInvitation(matchId)
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [userId, onInvitation])
-}

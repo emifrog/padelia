@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { type SupabaseClient } from '@supabase/supabase-js'
 import { getTierFromLevel } from './calculateElo'
 
 /**
@@ -6,7 +6,7 @@ import { getTierFromLevel } from './calculateElo'
  * Called after match completion to update leaderboards.
  *
  * Rankings are based on computed_level (which reflects ELO).
- * Points = computed_level × 100 for sortable integer ranking.
+ * Points = computed_level x 100 for sortable integer ranking.
  */
 
 interface RankableProfile {
@@ -18,21 +18,15 @@ interface RankableProfile {
 
 export async function updateRankingsForPlayers(
   playerIds: string[],
-  supabaseUrl: string,
-  supabaseAnonKey: string,
-  accessToken: string,
+  supabase: SupabaseClient,
 ) {
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  })
-
   // Get profiles for these players
   const { data: profilesRaw } = await supabase
     .from('profiles')
     .select('id, computed_level, city, matches_played')
     .in('id', playerIds)
 
-  const profiles = (profilesRaw || []) as unknown as RankableProfile[]
+  const profiles = (profilesRaw || []) as RankableProfile[]
 
   // Get unique cities from these players
   const cities = [...new Set(profiles.map((p) => p.city).filter(Boolean))] as string[]
@@ -48,43 +42,25 @@ export async function updateRankingsForPlayers(
       .order('computed_level', { ascending: false })
       .limit(200)
 
-    const cityPlayers = (playersRaw || []) as unknown as RankableProfile[]
+    const cityPlayers = (playersRaw || []) as RankableProfile[]
 
-    // Upsert ranking for each player
-    for (let i = 0; i < cityPlayers.length; i++) {
-      const player = cityPlayers[i]
-      const points = Math.round(player.computed_level * 100)
-      const tier = getTierFromLevel(player.computed_level)
+    // Batch upsert rankings instead of N+1 queries
+    const rankingRows = cityPlayers.map((player, i) => ({
+      player_id: player.id,
+      scope: 'city' as const,
+      scope_value: city,
+      rank_position: i + 1,
+      points: Math.round(player.computed_level * 100),
+      tier: getTierFromLevel(player.computed_level),
+      updated_at: new Date().toISOString(),
+    }))
 
-      // Check existing ranking
-      const { data: existing } = await supabase
+    if (rankingRows.length > 0) {
+      await supabase
         .from('rankings')
-        .select('id')
-        .eq('player_id', player.id)
-        .eq('scope', 'city')
-        .eq('scope_value', city)
-        .single()
-
-      if (existing) {
-        await supabase
-          .from('rankings')
-          .update({
-            rank_position: i + 1,
-            points,
-            tier,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', (existing as Record<string, unknown>).id as string)
-      } else {
-        await supabase.from('rankings').insert({
-          player_id: player.id,
-          scope: 'city',
-          scope_value: city,
-          rank_position: i + 1,
-          points,
-          tier,
+        .upsert(rankingRows, {
+          onConflict: 'player_id,scope,scope_value',
         })
-      }
     }
   }
 }

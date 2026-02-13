@@ -1,22 +1,9 @@
 import Link from 'next/link'
-import { MapPin, Calendar, Users, ChevronRight } from 'lucide-react'
+import { MapPin, Users, ChevronRight } from 'lucide-react'
 import { Card, Badge } from '@/components/ui'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-
-const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'success' | 'destructive' | 'muted' }> = {
-  pending: { label: 'En attente', variant: 'secondary' },
-  confirmed: { label: 'Confirmé', variant: 'success' },
-  in_progress: { label: 'En cours', variant: 'default' },
-  completed: { label: 'Terminé', variant: 'muted' },
-  cancelled: { label: 'Annulé', variant: 'destructive' },
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  friendly: 'Amical',
-  ranked: 'Classé',
-  tournament: 'Tournoi',
-}
+import { MATCH_STATUS, MATCH_TYPE } from '@/lib/constants/match'
 
 interface MatchCardProps {
   match: {
@@ -36,10 +23,8 @@ interface MatchCardProps {
 }
 
 export function MatchCard({ match, playerCount = 0, creatorName }: MatchCardProps) {
-  const statusInfo = STATUS_LABELS[match.status] || STATUS_LABELS.pending
+  const statusInfo = MATCH_STATUS[match.status] || MATCH_STATUS.pending
   const date = new Date(match.scheduled_at)
-  const isPast = date < new Date()
-
   return (
     <Link href={`/matches/${match.id}`}>
       <Card className="flex items-center gap-3 hover:border-primary/40 transition-colors cursor-pointer">
@@ -60,7 +45,7 @@ export function MatchCard({ match, playerCount = 0, creatorName }: MatchCardProp
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-2">
             <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-            <Badge variant="muted">{TYPE_LABELS[match.match_type] || match.match_type}</Badge>
+            <Badge variant="muted">{MATCH_TYPE[match.match_type] || match.match_type}</Badge>
           </div>
 
           {match.location_name && (

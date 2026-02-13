@@ -9,22 +9,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/layout/Header'
 import { Button, Card, Badge } from '@/components/ui'
 import { useMatchRealtime } from '@/hooks/useMatchRealtime'
+import { useMatchActions } from '@/hooks/useMatchActions'
 import { ScoreForm } from '@/components/match/ScoreForm'
-import { updateAfterMatch } from '@/lib/ranking/updateAfterMatch'
-
-const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'success' | 'destructive' | 'muted' }> = {
-  pending: { label: 'En attente de joueurs', variant: 'secondary' },
-  confirmed: { label: 'Confirmé', variant: 'success' },
-  in_progress: { label: 'En cours', variant: 'default' },
-  completed: { label: 'Terminé', variant: 'muted' },
-  cancelled: { label: 'Annulé', variant: 'destructive' },
-}
-
-const TYPE_MAP: Record<string, string> = {
-  friendly: 'Amical',
-  ranked: 'Classé',
-  tournament: 'Tournoi',
-}
+import { MATCH_STATUS, MATCH_TYPE } from '@/lib/constants/match'
 
 interface MatchPlayer {
   id: string
@@ -72,13 +59,13 @@ export default function MatchDetailPage() {
   const [sets, setSets] = useState<MatchSetRow[]>([])
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [joining, setJoining] = useState(false)
-  const [leaving, setLeaving] = useState(false)
-  const [updatingStats, setUpdatingStats] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  // Realtime: auto-refresh when match or players change
-  useMatchRealtime(matchId, () => loadMatch())
+  const isInMatch = players.some(
+    (p) => p.player_id === currentUserId && p.status !== 'declined'
+  )
+  const isCreator = match?.created_by === currentUserId
+  const acceptedCount = players.filter((p) => p.status === 'accepted').length
+  const isFull = acceptedCount >= 4
 
   const loadMatch = useCallback(async () => {
     const supabase = createClient()
@@ -114,7 +101,6 @@ export default function MatchDetailPage() {
       })))
     }
 
-    // Load existing sets
     const { data: setsData } = await supabase
       .from('match_sets')
       .select('set_number, team1_score, team2_score, is_tiebreak')
@@ -128,122 +114,32 @@ export default function MatchDetailPage() {
     setLoading(false)
   }, [matchId])
 
+  // Realtime: auto-refresh when match or players change
+  useMatchRealtime(matchId, () => loadMatch())
+
   useEffect(() => {
-    loadMatch()
+    let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadMatch().finally(() => { if (cancelled) return })
+    return () => { cancelled = true }
   }, [loadMatch])
 
-  const isInMatch = players.some(
-    (p) => p.player_id === currentUserId && p.status !== 'declined'
-  )
-  const isCreator = match?.created_by === currentUserId
-  const acceptedCount = players.filter((p) => p.status === 'accepted').length
-  const isFull = acceptedCount >= 4
-
-  async function handleJoin() {
-    if (!currentUserId || !match) return
-    setJoining(true)
-    setError(null)
-
-    try {
-      const supabase = createClient()
-
-      // Assign to team with fewer players
-      const team1Count = players.filter((p) => p.team === 1 && p.status === 'accepted').length
-      const team2Count = players.filter((p) => p.team === 2 && p.status === 'accepted').length
-      const assignedTeam = team1Count <= team2Count ? 1 : 2
-
-      const { error: insertError } = await supabase.from('match_players').insert({
-        match_id: match.id,
-        player_id: currentUserId,
-        team: assignedTeam,
-        status: 'accepted',
-      })
-
-      if (insertError) throw new Error('Impossible de rejoindre ce match.')
-
-      // If 4 players, auto-confirm and calculate balance score
-      if (acceptedCount + 1 >= 4) {
-        // Calculate balance score based on team level difference
-        const allPlayers = [...players.filter((p) => p.status === 'accepted'), {
-          player_id: currentUserId, team: assignedTeam, status: 'accepted',
-          profile: null, id: '', side: null, rating_change: null,
-        }]
-        const t1 = allPlayers.filter((p) => p.team === 1)
-        const t2 = allPlayers.filter((p) => p.team === 2)
-        const avgT1 = t1.reduce((sum, p) => sum + (p.profile?.level ?? match.min_level), 0) / Math.max(t1.length, 1)
-        const avgT2 = t2.reduce((sum, p) => sum + (p.profile?.level ?? match.min_level), 0) / Math.max(t2.length, 1)
-        const balanceScore = Math.round(Math.max(0, 100 - Math.abs(avgT1 - avgT2) * 20))
-
-        await supabase
-          .from('matches')
-          .update({ status: 'confirmed', balance_score: balanceScore })
-          .eq('id', match.id)
-      }
-
-      loadMatch()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de la connexion au match.')
-    } finally {
-      setJoining(false)
-    }
-  }
-
-  async function handleLeave() {
-    if (!currentUserId || !match) return
-    setLeaving(true)
-    setError(null)
-
-    try {
-      const supabase = createClient()
-      const { error: deleteError } = await supabase
-        .from('match_players')
-        .delete()
-        .eq('match_id', match.id)
-        .eq('player_id', currentUserId)
-
-      if (deleteError) throw new Error('Impossible de quitter ce match.')
-
-      // If was confirmed, go back to pending
-      if (match.status === 'confirmed') {
-        await supabase
-          .from('matches')
-          .update({ status: 'pending' })
-          .eq('id', match.id)
-      }
-
-      loadMatch()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors du retrait du match.')
-    } finally {
-      setLeaving(false)
-    }
-  }
-
-  async function handleScoreComplete() {
-    if (!match) return
-
-    // After scores are saved, update stats/ELO/partner history
-    setUpdatingStats(true)
-    try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (session?.access_token) {
-        await updateAfterMatch(
-          matchId,
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          session.access_token,
-        )
-      }
-    } catch (err) {
-      console.error('Erreur mise à jour stats:', err)
-    } finally {
-      setUpdatingStats(false)
-    }
-
-    loadMatch()
-  }
+  const {
+    joining,
+    leaving,
+    updatingStats,
+    error,
+    handleJoin,
+    handleLeave,
+    handleScoreComplete,
+  } = useMatchActions({
+    matchId,
+    currentUserId,
+    match,
+    players,
+    acceptedCount,
+    onRefresh: loadMatch,
+  })
 
   if (loading) {
     return (
@@ -272,7 +168,7 @@ export default function MatchDetailPage() {
     )
   }
 
-  const statusInfo = STATUS_MAP[match.status] || STATUS_MAP.pending
+  const statusInfo = MATCH_STATUS[match.status] || MATCH_STATUS.pending
   const date = new Date(match.scheduled_at)
 
   const team1 = players.filter((p) => p.team === 1 && p.status === 'accepted')
@@ -296,7 +192,7 @@ export default function MatchDetailPage() {
         {/* Status + type */}
         <div className="flex items-center gap-2">
           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-          <Badge variant="muted">{TYPE_MAP[match.match_type] || match.match_type}</Badge>
+          <Badge variant="muted">{MATCH_TYPE[match.match_type] || match.match_type}</Badge>
           {isCreator && <Badge variant="default">Organisateur</Badge>}
         </div>
 
@@ -340,7 +236,7 @@ export default function MatchDetailPage() {
           <Card>
             <h4 className="text-sm font-semibold text-primary mb-3">
               Équipe 1
-              {match.winner_team === 1 && <span className="ml-1">🏆</span>}
+              {match.winner_team === 1 && <span className="ml-1">{'🏆'}</span>}
             </h4>
             {team1.length === 0 ? (
               <p className="text-xs text-muted-foreground">Aucun joueur</p>
@@ -380,7 +276,7 @@ export default function MatchDetailPage() {
           <Card>
             <h4 className="text-sm font-semibold text-secondary mb-3">
               Équipe 2
-              {match.winner_team === 2 && <span className="ml-1">🏆</span>}
+              {match.winner_team === 2 && <span className="ml-1">{'🏆'}</span>}
             </h4>
             {team2.length === 0 ? (
               <p className="text-xs text-muted-foreground">Aucun joueur</p>

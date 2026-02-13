@@ -4,34 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button, Input, Select, Textarea } from '@/components/ui'
 import { profileSchema, type ProfileFormValues } from '@/lib/validations/profile'
-
-const HAND_OPTIONS = [
-  { value: 'right', label: 'Droitier' },
-  { value: 'left', label: 'Gaucher' },
-]
-
-const SIDE_OPTIONS = [
-  { value: 'right', label: 'Droite' },
-  { value: 'left', label: 'Gauche' },
-  { value: 'both', label: 'Les deux' },
-]
-
-const STYLE_OPTIONS = [
-  { value: 'offensive', label: 'Offensif' },
-  { value: 'defensive', label: 'Défensif' },
-  { value: 'mixed', label: 'Mixte' },
-]
-
-const GOAL_OPTIONS = [
-  { value: 'casual', label: 'Loisir' },
-  { value: 'improvement', label: 'Progression' },
-  { value: 'competition', label: 'Compétition' },
-]
-
-const LEVEL_OPTIONS = Array.from({ length: 19 }, (_, i) => {
-  const val = (i + 2) / 2
-  return { value: String(val), label: `${val}` }
-})
+import { HAND_OPTIONS, SIDE_OPTIONS, STYLE_OPTIONS, GOAL_OPTIONS, LEVEL_OPTIONS } from '@/lib/constants/profile'
 
 interface ProfileFormProps {
   defaultValues?: Partial<ProfileFormValues>

@@ -34,9 +34,8 @@ export default function AvailabilityPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => {
-    loadSlots()
-  }, [loadSlots])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { loadSlots() }, [loadSlots])
 
   async function handleAdd(data: AvailabilityFormValues) {
     const supabase = createClient()

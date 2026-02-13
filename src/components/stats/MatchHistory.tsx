@@ -7,6 +7,7 @@ import { Card, Badge } from '@/components/ui'
 import { Calendar, ChevronRight, Trophy, TrendingUp, TrendingDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { MATCH_TYPE } from '@/lib/constants/match'
 
 interface HistoryMatch {
   id: string
@@ -75,11 +76,6 @@ export function MatchHistory() {
     )
   }
 
-  const TYPE_MAP: Record<string, string> = {
-    friendly: 'Amical',
-    ranked: 'Classé',
-    tournament: 'Tournoi',
-  }
 
   return (
     <div className="space-y-3">
@@ -115,7 +111,7 @@ export function MatchHistory() {
                     <Badge variant={isWin ? 'success' : 'destructive'}>
                       {isWin ? 'Victoire' : 'Défaite'}
                     </Badge>
-                    <Badge variant="muted">{TYPE_MAP[m.match.match_type] || m.match.match_type}</Badge>
+                    <Badge variant="muted">{MATCH_TYPE[m.match.match_type] || m.match.match_type}</Badge>
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                     <span>{format(date, 'd MMM yyyy', { locale: fr })}</span>

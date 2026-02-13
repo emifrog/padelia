@@ -3,37 +3,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Button, Input, Select, Textarea } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { ArrowLeft, ArrowRight, User, Target, Gamepad2, Check } from 'lucide-react'
 import { geocodeCity } from '@/lib/utils/geocode'
-
-const HAND_OPTIONS = [
-  { value: 'right', label: 'Droitier' },
-  { value: 'left', label: 'Gaucher' },
-]
-
-const SIDE_OPTIONS = [
-  { value: 'right', label: 'Droite' },
-  { value: 'left', label: 'Gauche' },
-  { value: 'both', label: 'Les deux' },
-]
-
-const STYLE_OPTIONS = [
-  { value: 'offensive', label: 'Offensif' },
-  { value: 'defensive', label: 'Défensif' },
-  { value: 'mixed', label: 'Mixte' },
-]
-
-const GOAL_OPTIONS = [
-  { value: 'casual', label: 'Loisir' },
-  { value: 'improvement', label: 'Progression' },
-  { value: 'competition', label: 'Compétition' },
-]
-
-const LEVEL_OPTIONS = Array.from({ length: 19 }, (_, i) => {
-  const val = (i + 2) / 2
-  return { value: String(val), label: `${val}` }
-})
+import { StepIdentity } from '@/components/onboarding/StepIdentity'
+import { StepLevel } from '@/components/onboarding/StepLevel'
+import { StepStyle } from '@/components/onboarding/StepStyle'
 
 const STEPS = [
   { icon: User, title: 'Qui es-tu ?', subtitle: 'Ton identité de joueur' },
@@ -89,7 +64,6 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      // Geocode city to get coordinates
       const geo = await geocodeCity(city)
 
       const { error: updateError } = await supabase
@@ -172,90 +146,36 @@ export default function OnboardingPage() {
       {/* Step content */}
       <div className="space-y-4">
         {step === 0 && (
-          <>
-            <Input
-              id="username"
-              label="Pseudo"
-              placeholder="tonpseudo"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-            <Input
-              id="full_name"
-              label="Nom complet"
-              placeholder="Jean Dupont"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-            />
-            <Input
-              id="city"
-              label="Ville"
-              placeholder="Paris, Nice, Lyon..."
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-            />
-          </>
+          <StepIdentity
+            username={username}
+            fullName={fullName}
+            city={city}
+            onUsernameChange={setUsername}
+            onFullNameChange={setFullName}
+            onCityChange={setCity}
+          />
         )}
 
         {step === 1 && (
-          <>
-            <Select
-              id="level"
-              label="Ton niveau (1 à 10)"
-              options={LEVEL_OPTIONS}
-              value={level}
-              onChange={(e) => setLevel(e.target.value)}
-            />
-            <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
-              <p><strong className="text-foreground">1-3 :</strong> Débutant — Tu découvres le padel</p>
-              <p><strong className="text-foreground">3-5 :</strong> Intermédiaire — Tu maîtrises les bases</p>
-              <p><strong className="text-foreground">5-7 :</strong> Avancé — Bon niveau technique</p>
-              <p><strong className="text-foreground">7-10 :</strong> Expert — Joueur compétitif</p>
-            </div>
-            <Select
-              id="dominant_hand"
-              label="Main dominante"
-              options={HAND_OPTIONS}
-              value={dominantHand}
-              onChange={(e) => setDominantHand(e.target.value)}
-            />
-          </>
+          <StepLevel
+            level={level}
+            dominantHand={dominantHand}
+            onLevelChange={setLevel}
+            onDominantHandChange={setDominantHand}
+          />
         )}
 
         {step === 2 && (
-          <>
-            <Select
-              id="preferred_side"
-              label="Côté préféré"
-              options={SIDE_OPTIONS}
-              value={preferredSide}
-              onChange={(e) => setPreferredSide(e.target.value)}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                id="play_style"
-                label="Style de jeu"
-                options={STYLE_OPTIONS}
-                value={playStyle}
-                onChange={(e) => setPlayStyle(e.target.value)}
-              />
-              <Select
-                id="goal"
-                label="Objectif"
-                options={GOAL_OPTIONS}
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-              />
-            </div>
-            <Textarea
-              id="bio"
-              label="Bio (optionnel)"
-              placeholder="Parle un peu de toi et de ton jeu..."
-              rows={3}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-            />
-          </>
+          <StepStyle
+            preferredSide={preferredSide}
+            playStyle={playStyle}
+            goal={goal}
+            bio={bio}
+            onPreferredSideChange={setPreferredSide}
+            onPlayStyleChange={setPlayStyle}
+            onGoalChange={setGoal}
+            onBioChange={setBio}
+          />
         )}
       </div>
 

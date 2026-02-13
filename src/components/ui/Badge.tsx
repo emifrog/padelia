@@ -9,8 +9,10 @@ const VARIANTS = {
   muted: 'bg-muted text-muted-foreground',
 } as const
 
+export type BadgeVariant = keyof typeof VARIANTS
+
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: keyof typeof VARIANTS
+  variant?: BadgeVariant
 }
 
 export function Badge({ className, variant = 'default', children, ...props }: BadgeProps) {
