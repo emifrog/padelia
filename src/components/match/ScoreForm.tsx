@@ -1,0 +1,259 @@
+'use client'
+
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Button, Card, Input } from '@/components/ui'
+import { Trophy, Plus, Minus } from 'lucide-react'
+
+interface SetScore {
+  set_number: number
+  team1_score: number
+  team2_score: number
+  is_tiebreak: boolean
+}
+
+interface ScoreFormProps {
+  matchId: string
+  isCreator: boolean
+  matchStatus: string
+  existingSets: SetScore[]
+  onComplete: () => void
+}
+
+export function ScoreForm({
+  matchId,
+  isCreator,
+  matchStatus,
+  existingSets,
+  onComplete,
+}: ScoreFormProps) {
+  const [sets, setSets] = useState<SetScore[]>(
+    existingSets.length > 0
+      ? existingSets
+      : [
+          { set_number: 1, team1_score: 0, team2_score: 0, is_tiebreak: false },
+          { set_number: 2, team1_score: 0, team2_score: 0, is_tiebreak: false },
+        ],
+  )
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const canEdit = isCreator && (matchStatus === 'confirmed' || matchStatus === 'in_progress' || matchStatus === 'completed')
+
+  function addSet() {
+    if (sets.length >= 3) return
+    setSets([
+      ...sets,
+      { set_number: sets.length + 1, team1_score: 0, team2_score: 0, is_tiebreak: false },
+    ])
+  }
+
+  function removeSet() {
+    if (sets.length <= 2) return
+    setSets(sets.slice(0, -1))
+  }
+
+  function updateScore(setIndex: number, team: 'team1_score' | 'team2_score', value: number) {
+    const updated = [...sets]
+    updated[setIndex] = { ...updated[setIndex], [team]: Math.max(0, value) }
+    setSets(updated)
+  }
+
+  function toggleTiebreak(setIndex: number) {
+    const updated = [...sets]
+    updated[setIndex] = { ...updated[setIndex], is_tiebreak: !updated[setIndex].is_tiebreak }
+    setSets(updated)
+  }
+
+  function determineWinner(): 1 | 2 | null {
+    let team1Sets = 0
+    let team2Sets = 0
+    for (const s of sets) {
+      if (s.team1_score > s.team2_score) team1Sets++
+      else if (s.team2_score > s.team1_score) team2Sets++
+    }
+    if (team1Sets > team2Sets) return 1
+    if (team2Sets > team1Sets) return 2
+    return null
+  }
+
+  async function handleSave() {
+    setError('')
+    setSaving(true)
+
+    try {
+      const supabase = createClient()
+
+      // Validate: at least all sets should have valid scores
+      for (const s of sets) {
+        if (s.team1_score === 0 && s.team2_score === 0) {
+          throw new Error(`Le set ${s.set_number} n'a pas de score.`)
+        }
+      }
+
+      // Delete existing sets for this match
+      await supabase
+        .from('match_sets')
+        .delete()
+        .eq('match_id', matchId)
+
+      // Insert new sets
+      const { error: insertError } = await supabase
+        .from('match_sets')
+        .insert(
+          sets.map((s) => ({
+            match_id: matchId,
+            set_number: s.set_number,
+            team1_score: s.team1_score,
+            team2_score: s.team2_score,
+            is_tiebreak: s.is_tiebreak,
+          })),
+        )
+
+      if (insertError) throw new Error('Erreur lors de l\'enregistrement des scores.')
+
+      // Determine winner and update match
+      const winnerTeam = determineWinner()
+
+      const { error: matchError } = await supabase
+        .from('matches')
+        .update({
+          status: 'completed' as const,
+          winner_team: winnerTeam,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', matchId)
+
+      if (matchError) throw new Error('Erreur lors de la finalisation du match.')
+
+      onComplete()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const winnerTeam = determineWinner()
+
+  return (
+    <Card className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-secondary" />
+          <h3 className="font-semibold">Score du match</h3>
+        </div>
+        {canEdit && sets.length < 3 && (
+          <div className="flex gap-1">
+            <button
+              onClick={removeSet}
+              disabled={sets.length <= 2}
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors disabled:opacity-30 cursor-pointer"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <button
+              onClick={addSet}
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Score table header */}
+      <div className="grid grid-cols-[1fr_80px_80px] gap-2 text-xs font-semibold text-muted-foreground">
+        <span />
+        <span className="text-center text-primary">Éq. 1</span>
+        <span className="text-center text-secondary">Éq. 2</span>
+      </div>
+
+      {/* Sets */}
+      {sets.map((s, i) => (
+        <div key={s.set_number} className="grid grid-cols-[1fr_80px_80px] gap-2 items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">
+              {s.is_tiebreak ? 'Tiebreak' : `Set ${s.set_number}`}
+            </span>
+            {canEdit && (
+              <button
+                onClick={() => toggleTiebreak(i)}
+                className={`text-[10px] px-1.5 py-0.5 rounded-full cursor-pointer transition-colors ${
+                  s.is_tiebreak
+                    ? 'bg-secondary/10 text-secondary'
+                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                TB
+              </button>
+            )}
+          </div>
+
+          {canEdit ? (
+            <>
+              <Input
+                type="number"
+                min={0}
+                max={7}
+                value={s.team1_score}
+                onChange={(e) => updateScore(i, 'team1_score', parseInt(e.target.value) || 0)}
+                className="text-center h-9 !px-2"
+              />
+              <Input
+                type="number"
+                min={0}
+                max={7}
+                value={s.team2_score}
+                onChange={(e) => updateScore(i, 'team2_score', parseInt(e.target.value) || 0)}
+                className="text-center h-9 !px-2"
+              />
+            </>
+          ) : (
+            <>
+              <span className={`text-center text-lg font-bold ${
+                s.team1_score > s.team2_score ? 'text-primary' : 'text-muted-foreground'
+              }`}>
+                {s.team1_score}
+              </span>
+              <span className={`text-center text-lg font-bold ${
+                s.team2_score > s.team1_score ? 'text-secondary' : 'text-muted-foreground'
+              }`}>
+                {s.team2_score}
+              </span>
+            </>
+          )}
+        </div>
+      ))}
+
+      {/* Winner display */}
+      {(existingSets.length > 0 || winnerTeam) && (
+        <div className="border-t border-border pt-3 text-center">
+          {winnerTeam ? (
+            <p className="text-sm font-semibold">
+              🏆 Victoire{' '}
+              <span className={winnerTeam === 1 ? 'text-primary' : 'text-secondary'}>
+                Équipe {winnerTeam}
+              </span>
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">Égalité</p>
+          )}
+        </div>
+      )}
+
+      {/* Actions */}
+      {canEdit && (
+        <>
+          {error && (
+            <p className="text-sm text-destructive text-center">{error}</p>
+          )}
+          <Button className="w-full" onClick={handleSave} loading={saving}>
+            <Trophy className="h-4 w-4" />
+            Enregistrer et terminer le match
+          </Button>
+        </>
+      )}
+    </Card>
+  )
+}

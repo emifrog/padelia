@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0A1628"/>
+  <!-- P letter shape -->
+  <path d="M116 80h192c70.7 0 128 57.3 128 128s-57.3 128-128 128H212v96h-96V80z" fill="white"/>
+  <!-- P letter hole (bowl cutout) -->
+  <path d="M212 168v96h96c26.5 0 48-21.5 48-48s-21.5-48-48-48h-96z" fill="#0A1628"/>
+  <!-- Padel court overlay (green/yellow quad) -->
+  <rect x="100" y="144" width="80" height="80" rx="4" fill="#4CAF50"/>
+  <rect x="180" y="144" width="80" height="80" rx="4" fill="#C8E636"/>
+  <rect x="100" y="224" width="80" height="80" rx="4" fill="#C8E636"/>
+  <rect x="180" y="224" width="80" height="80" rx="4" fill="#4CAF50"/>
+  <!-- Court lines -->
+  <line x1="180" y1="144" x2="180" y2="304" stroke="white" stroke-width="4" opacity="0.6"/>
+  <line x1="100" y1="224" x2="260" y2="224" stroke="white" stroke-width="4" opacity="0.6"/>
+</svg>

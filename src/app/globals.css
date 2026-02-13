@@ -1,26 +1,121 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Padelia — Dark-first design, vert padel + accent ambre */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: #4CAF50;
+  --color-primary-foreground: #ffffff;
+  --color-primary-hover: #388E3C;
+  --color-primary-dark: #1B5E20;
+  --color-secondary: #FF6F00;
+  --color-secondary-light: #FFB300;
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #111D2E;
+  --color-muted-foreground: #8B949E;
+  --color-border: #1A2A40;
+  --color-destructive: #F44336;
+  --color-success: #4CAF50;
+  --color-card: #0F1B2E;
+  --color-card-foreground: #E6EDF3;
+  --color-surface: #111D2E;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
+:root {
+  --background: #0A1628;
+  --foreground: #E6EDF3;
+  color-scheme: dark;
+}
+
+/* Light mode override */
+@media (prefers-color-scheme: light) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f8faf9;
+    --foreground: #1B5E20;
+    color-scheme: light;
+  }
+
+  @theme inline {
+    --color-muted: #f0f4f1;
+    --color-muted-foreground: #5a6b5e;
+    --color-border: #d4ddd6;
+    --color-card: #ffffff;
+    --color-card-foreground: #0A1628;
+    --color-surface: #f0f4f1;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+/* Prevent iOS bounce/overscroll */
+html {
+  overscroll-behavior: none;
+}
+
+/* Touch-friendly interactions */
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Input zoom prevention on iOS (16px min) */
+input, select, textarea {
+  font-size: max(16px, 1em);
+}
+
+/* Scrollbar styling for mobile feel */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Standalone PWA: no address bar, adjust for notch */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Toast slide-down animation */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.25s ease-out;
 }
