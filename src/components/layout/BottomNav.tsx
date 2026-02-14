@@ -1,46 +1,54 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Home, Search, BarChart3, User } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Home, Swords, Users, BarChart3, User } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/feed', label: 'Accueil', icon: Home },
-  { href: '/matches', label: 'Matchs', icon: Search },
+  { href: '/accueil', label: 'Accueil', icon: Home },
+  { href: '/matchs', label: 'Matchs', icon: Swords },
+  { href: '/joueurs', label: 'Joueurs', icon: Users },
   { href: '/stats', label: 'Stats', icon: BarChart3 },
-  { href: '/profile', label: 'Profil', icon: User },
-] as const
+  { href: '/profil', label: 'Profil', icon: User },
+] as const;
 
-export function BottomNav() {
-  const pathname = usePathname()
+export default function BottomNav() {
+  const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto flex h-16 max-w-md items-center justify-around px-1">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white shadow-[0_-2px_12px_rgba(0,0,0,0.04)]">
+      <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-3 pb-[env(safe-area-inset-bottom)]">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname.startsWith(href)
+          const isActive = pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
-              aria-current={isActive ? 'page' : undefined}
-              className={cn(
-                'relative flex flex-col items-center justify-center gap-0.5 min-w-[64px] min-h-[48px] rounded-xl px-2 py-1 text-[11px] font-medium transition-colors active:scale-95',
-                isActive
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
+              className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 transition-colors"
             >
+              {/* Green indicator line above active tab */}
               {isActive && (
-                <span className="absolute -top-px left-1/2 -translate-x-1/2 h-0.5 w-6 rounded-full bg-primary" />
+                <div className="absolute -top-2 h-[3px] w-6 rounded-full bg-green-padel" />
               )}
-              <Icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
-              <span>{label}</span>
+
+              <div className="relative">
+                <Icon
+                  className={`h-6 w-6 ${isActive ? 'text-green-padel' : 'text-gray-400'}`}
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+              </div>
+
+              <span
+                className={`text-[10px] ${
+                  isActive ? 'font-bold text-green-padel' : 'font-medium text-gray-400'
+                }`}
+              >
+                {label}
+              </span>
             </Link>
-          )
+          );
         })}
       </div>
     </nav>
-  )
+  );
 }

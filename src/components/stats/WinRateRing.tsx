@@ -1,81 +1,41 @@
-'use client'
-
-import { Card } from '@/components/ui'
-
-interface WinRateRingProps {
-  wins: number
-  losses: number
-  matchesPlayed: number
+interface Props {
+  winRate: number;
+  size?: number;
 }
 
-export function WinRateRing({ wins, losses, matchesPlayed }: WinRateRingProps) {
-  const winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0
-
-  // SVG ring parameters
-  const size = 100
-  const strokeWidth = 8
-  const radius = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * radius
-  const offset = circumference - (winRate / 100) * circumference
+export default function WinRateRing({ winRate, size = 80 }: Props) {
+  const radius = (size - 8) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (winRate / 100) * circumference;
 
   return (
-    <Card className="flex items-center gap-5">
-      {/* Ring */}
-      <div className="relative shrink-0">
-        <svg
-          width={size}
-          height={size}
-          className="-rotate-90"
-          role="img"
-          aria-label={`Taux de victoire : ${winRate}%`}
-        >
-          <title>Taux de victoire : {winRate}%</title>
-          {/* Background ring */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="var(--color-muted)"
-            strokeWidth={strokeWidth}
-          />
-          {/* Progress ring */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="var(--color-primary)"
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            className="transition-all duration-700"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-          <span className="text-xl font-bold text-primary">{winRate}%</span>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="space-y-2 flex-1">
-        <h3 className="font-semibold text-sm">Taux de victoire</h3>
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Victoires</span>
-            <span className="font-medium text-primary">{wins}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Défaites</span>
-            <span className="font-medium text-destructive">{losses}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Total</span>
-            <span className="font-medium">{matchesPlayed}</span>
-          </div>
-        </div>
-      </div>
-    </Card>
-  )
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={6}
+          className="text-muted"
+        />
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={6}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          className="text-primary transition-all"
+        />
+      </svg>
+      <span className="absolute text-lg font-bold">{winRate}%</span>
+    </div>
+  );
 }

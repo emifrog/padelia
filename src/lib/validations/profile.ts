@@ -1,31 +1,29 @@
-import { z } from 'zod/v4'
+import { z } from 'zod';
 
 export const profileSchema = z.object({
-  username: z
-    .string()
-    .min(3, 'Le pseudo doit faire au moins 3 caractères')
-    .max(20, 'Le pseudo ne peut pas dépasser 20 caractères')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Lettres, chiffres et underscores uniquement'),
   full_name: z
     .string()
-    .min(2, 'Le nom doit faire au moins 2 caractères')
-    .max(50, 'Le nom ne peut pas dépasser 50 caractères'),
-  city: z
+    .min(2, 'Minimum 2 caractères')
+    .max(50, 'Maximum 50 caractères'),
+  username: z
     .string()
-    .min(2, 'La ville doit faire au moins 2 caractères'),
-  level: z
-    .number()
-    .min(1, 'Le niveau minimum est 1')
-    .max(10, 'Le niveau maximum est 10'),
-  dominant_hand: z.enum(['left', 'right']),
-  preferred_side: z.enum(['left', 'right', 'both']),
-  play_style: z.enum(['offensive', 'defensive', 'mixed']),
-  goal: z.enum(['casual', 'improvement', 'competition']),
+    .min(3, 'Minimum 3 caractères')
+    .max(20, 'Maximum 20 caractères')
+    .regex(/^[a-z0-9_]+$/, 'Lettres minuscules, chiffres et _ uniquement'),
   bio: z
     .string()
-    .max(500, 'La bio ne peut pas dépasser 500 caractères')
+    .max(500, 'Maximum 500 caractères')
     .optional()
     .or(z.literal('')),
-})
+  city: z.string().min(2, 'Ville requise'),
+  level: z.enum(['debutant', 'initie', 'intermediaire', 'avance', 'expert', 'competition']),
+  level_score: z.number().min(1).max(10),
+  preferred_side: z.enum(['gauche', 'droite', 'les_deux']),
+  play_style: z.enum(['offensif', 'defensif', 'mixte', 'polyvalent']),
+  player_goal: z.enum(['loisir', 'progression', 'competition', 'social']),
+  dominant_hand: z.enum(['droite', 'gauche']),
+  years_playing: z.number().min(0).max(50),
+  max_distance_km: z.number().min(1).max(200),
+});
 
-export type ProfileFormValues = z.infer<typeof profileSchema>
+export type ProfileFormData = z.infer<typeof profileSchema>;

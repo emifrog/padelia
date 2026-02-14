@@ -1,60 +1,109 @@
-import { Select, Textarea } from '@/components/ui'
-import { SIDE_OPTIONS, STYLE_OPTIONS, GOAL_OPTIONS } from '@/lib/constants/profile'
+'use client';
 
-interface StepStyleProps {
-  preferredSide: string
-  playStyle: string
-  goal: string
-  bio: string
-  onPreferredSideChange: (value: string) => void
-  onPlayStyleChange: (value: string) => void
-  onGoalChange: (value: string) => void
-  onBioChange: (value: string) => void
+import { SIDE_LABELS, STYLE_LABELS, GOAL_LABELS } from '@/types';
+import type { PlayingSide, PlayStyle, PlayerGoal } from '@/types';
+import type { OnboardingData } from '@/lib/validations/onboarding';
+
+interface Props {
+  data: Partial<OnboardingData>;
+  onChange: (partial: Partial<OnboardingData>) => void;
 }
 
-export function StepStyle({
-  preferredSide,
-  playStyle,
-  goal,
-  bio,
-  onPreferredSideChange,
-  onPlayStyleChange,
-  onGoalChange,
-  onBioChange,
-}: StepStyleProps) {
+const SIDE_ICONS: Record<PlayingSide, string> = {
+  gauche: 'Revés',
+  droite: 'Drive',
+  les_deux: 'Polyvalent',
+};
+
+const STYLE_ICONS: Record<PlayStyle, string> = {
+  offensif: 'Attaque',
+  defensif: 'Défense',
+  mixte: 'Mixte',
+  polyvalent: 'Tout terrain',
+};
+
+const GOAL_ICONS: Record<PlayerGoal, string> = {
+  loisir: 'Fun',
+  progression: 'Evoluer',
+  competition: 'Gagner',
+  social: 'Rencontres',
+};
+
+function OptionGrid<T extends string>({
+  label,
+  options,
+  descriptions,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: Record<T, string>;
+  descriptions: Record<T, string>;
+  value: T | undefined;
+  onChange: (v: T) => void;
+}) {
   return (
-    <>
-      <Select
-        id="preferred_side"
-        label="Côté préféré"
-        options={SIDE_OPTIONS}
-        value={preferredSide}
-        onChange={(e) => onPreferredSideChange(e.target.value)}
-      />
-      <div className="grid grid-cols-2 gap-4">
-        <Select
-          id="play_style"
-          label="Style de jeu"
-          options={STYLE_OPTIONS}
-          value={playStyle}
-          onChange={(e) => onPlayStyleChange(e.target.value)}
-        />
-        <Select
-          id="goal"
-          label="Objectif"
-          options={GOAL_OPTIONS}
-          value={goal}
-          onChange={(e) => onGoalChange(e.target.value)}
-        />
+    <div className="space-y-3">
+      <p className="text-sm font-medium text-gray-300">{label}</p>
+      <div className="grid grid-cols-2 gap-2">
+        {(Object.keys(options) as T[]).map((key) => {
+          const isSelected = value === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onChange(key)}
+              className={`rounded-xl border px-3 py-3 text-left transition-colors ${
+                isSelected
+                  ? 'border-green-padel bg-green-padel/10'
+                  : 'border-navy-mid bg-navy-light hover:border-gray-500'
+              }`}
+            >
+              <p className={`text-sm font-semibold ${isSelected ? 'text-green-padel' : 'text-white'}`}>
+                {options[key]}
+              </p>
+              <p className="text-xs text-gray-500">{descriptions[key]}</p>
+            </button>
+          );
+        })}
       </div>
-      <Textarea
-        id="bio"
-        label="Bio (optionnel)"
-        placeholder="Parle un peu de toi et de ton jeu..."
-        rows={3}
-        value={bio}
-        onChange={(e) => onBioChange(e.target.value)}
+    </div>
+  );
+}
+
+export default function StepStyle({ data, onChange }: Props) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-white">Ton style</h2>
+        <p className="mt-1 text-sm text-gray-400">
+          Dis-nous comment tu joues pour trouver les meilleurs partenaires
+        </p>
+      </div>
+
+      <OptionGrid
+        label="Position préférée"
+        options={SIDE_LABELS}
+        descriptions={SIDE_ICONS}
+        value={data.preferred_side}
+        onChange={(v) => onChange({ preferred_side: v })}
       />
-    </>
-  )
+
+      <OptionGrid
+        label="Style de jeu"
+        options={STYLE_LABELS}
+        descriptions={STYLE_ICONS}
+        value={data.play_style}
+        onChange={(v) => onChange({ play_style: v })}
+      />
+
+      <OptionGrid
+        label="Objectif principal"
+        options={GOAL_LABELS}
+        descriptions={GOAL_ICONS}
+        value={data.player_goal}
+        onChange={(v) => onChange({ player_goal: v })}
+      />
+    </div>
+  );
 }

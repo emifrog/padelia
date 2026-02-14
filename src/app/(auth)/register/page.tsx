@@ -1,153 +1,130 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Button, Input } from '@/components/ui'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { Loader2, Mail, Lock, User } from 'lucide-react';
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
 
   async function handleRegister(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setLoading(true);
 
-    if (password.length < 6) {
-      setError('Le mot de passe doit faire au moins 6 caractères.')
-      return
-    }
-
-    setLoading(true)
-
-    try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            username: `player_${Date.now().toString(36)}`,
-          },
-        },
-      })
-
-      if (error) {
-        if (error.message.includes('already registered')) {
-          setError('Cet email est déjà utilisé.')
-        } else {
-          setError('Erreur lors de l\'inscription. Réessayez.')
-        }
-        return
-      }
-
-      router.push('/onboarding')
-      router.refresh()
-    } catch {
-      setError('Une erreur est survenue. Réessayez.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleGoogleRegister() {
-    const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          full_name: fullName,
+          username: fullName.toLowerCase().replace(/\s+/g, '_').slice(0, 20),
+        },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
-    })
+    });
+
+    if (error) {
+      toast.error(error.message === 'User already registered'
+        ? 'Cet email est déjà utilisé'
+        : 'Erreur lors de l\'inscription');
+      setLoading(false);
+      return;
+    }
+
+    toast.success('Compte créé ! Vérifie ton email pour confirmer.');
+    router.push('/login');
   }
 
   return (
-    <div className="w-full space-y-8">
-      <div className="text-center space-y-3">
-        <span className="text-5xl">🎾</span>
-        <h1 className="text-3xl font-black text-foreground tracking-tight">Rejoins padelia</h1>
-        <p className="text-muted-foreground text-sm">
-          Crée ton compte et trouve tes partenaires de padel.
+    <Card className="border-navy-mid bg-navy-light">
+      <CardContent className="pt-6">
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="fullName" className="text-gray-300">
+              Nom complet
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="Lucas Martin"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                minLength={2}
+                className="border-navy-mid bg-navy pl-10 text-white placeholder:text-gray-500"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-gray-300">
+              Email
+            </Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="ton@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="border-navy-mid bg-navy pl-10 text-white placeholder:text-gray-500"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-gray-300">
+              Mot de passe
+            </Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="********"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="border-navy-mid bg-navy pl-10 text-white placeholder:text-gray-500"
+              />
+            </div>
+            <p className="text-xs text-gray-500">Minimum 6 caractères</p>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-green-padel font-semibold hover:bg-green-padel-light"
+          >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Créer mon compte
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-gray-400">
+          Déjà un compte ?{' '}
+          <Link href="/login" className="font-medium text-green-padel hover:underline">
+            Se connecter
+          </Link>
         </p>
-      </div>
-
-      <form onSubmit={handleRegister} className="space-y-4">
-        <Input
-          id="fullName"
-          label="Nom complet"
-          type="text"
-          placeholder="Jean Dupont"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          required
-          autoComplete="name"
-        />
-        <Input
-          id="email"
-          label="Email"
-          type="email"
-          placeholder="ton@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-        />
-        <Input
-          id="password"
-          label="Mot de passe"
-          type="password"
-          placeholder="6 caractères minimum"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoComplete="new-password"
-          minLength={6}
-        />
-
-        {error && (
-          <p className="text-sm text-destructive text-center">{error}</p>
-        )}
-
-        <Button type="submit" className="w-full" loading={loading}>
-          Créer mon compte
-        </Button>
-      </form>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-background px-3 text-muted-foreground">ou</span>
-        </div>
-      </div>
-
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={handleGoogleRegister}
-      >
-        <svg className="h-5 w-5" viewBox="0 0 24 24">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-        </svg>
-        Continuer avec Google
-      </Button>
-
-      <p className="text-center text-sm text-muted-foreground">
-        Déjà un compte ?{' '}
-        <Link href="/login" className="font-medium text-primary hover:underline">
-          Se connecter
-        </Link>
-      </p>
-    </div>
-  )
+      </CardContent>
+    </Card>
+  );
 }

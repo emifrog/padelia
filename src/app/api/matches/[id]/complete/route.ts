@@ -1,339 +1,168 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { calculateEloChanges, type EloPlayerInput, type EloMatchResult } from '@/lib/ranking/calculateElo'
-import { calculateReliabilityChange } from '@/lib/ranking/reliability'
-import { updateRankingsForPlayers } from '@/lib/ranking/updateRankings'
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { calculateEloChanges, type EloPlayer, type MatchResult } from '@/lib/ranking';
+import { calculateReliability } from '@/lib/ranking';
 
-interface MatchPlayerRow {
-  player_id: string
-  team: number
-  status: string
-}
-
-interface MatchSetRow {
-  set_number: number
-  team1_score: number
-  team2_score: number
-}
-
-interface ProfileRow {
-  id: string
-  computed_level: number
-  matches_played: number
-  wins: number
-  reliability_score: number
-  city: string | null
-}
-
-interface PlayerStatsRow {
-  id: string
-  matches_played: number
-  wins: number
-  losses: number
-  sets_won: number
-  sets_lost: number
-  games_won: number
-  games_lost: number
-  win_streak: number
-  best_streak: number
-}
-
-interface PartnerHistoryRow {
-  matches_together: number
-  wins_together: number
-  matches_against: number
-  wins_against: number
+interface RouteContext {
+  params: Promise<{ id: string }>;
 }
 
 /**
  * POST /api/matches/[id]/complete
- *
- * Updates all player stats, ratings, partner history, and reliability
- * after a match is completed. Runs server-side with the service role key
- * to prevent client-side manipulation of ELO calculations.
- *
- * Requires authenticated user who is a participant in the match.
+ * Triggered after match result is saved.
+ * Calculates ELO changes, updates player_stats, and updates profiles.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const { id: matchId } = await params
+export async function POST(_request: Request, context: RouteContext) {
+  const { id: matchId } = await context.params;
+  const supabase = await createClient();
 
-  // Verify the caller is authenticated
-  const authHeader = request.headers.get('Authorization')
-  if (!authHeader?.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 })
-  }
-
-  const accessToken = authHeader.replace('Bearer ', '')
-
-  // Create a client with the user's token to verify identity
-  const userClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${accessToken}` } } },
-  )
-
-  const { data: { user }, error: authError } = await userClient.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Token invalide.' }, { status: 401 })
-  }
-
-  // Use the service role key for all data mutations (trusted server-side)
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
-
-  // 1. Load match data
-  const { data: match } = await supabase
+  // 1. Get match with scores
+  const { data: match, error: matchError } = await supabase
     .from('matches')
-    .select('id, winner_team, status')
+    .select('*')
     .eq('id', matchId)
-    .single()
+    .eq('status', 'completed')
+    .single();
 
-  if (!match || match.status !== 'completed' || !match.winner_team) {
-    return NextResponse.json(
-      { error: 'Match non terminé ou pas de vainqueur.' },
-      { status: 400 },
-    )
+  if (matchError || !match) {
+    return NextResponse.json({ error: 'Match not found or not completed' }, { status: 404 });
   }
 
-  // 2. Load match players
-  const { data: matchPlayersRaw } = await supabase
-    .from('match_players')
-    .select('player_id, team, status')
+  if (!match.winner_team || !match.score_team_a || !match.score_team_b) {
+    return NextResponse.json({ error: 'Scores missing' }, { status: 400 });
+  }
+
+  // 2. Get participants with profiles
+  const { data: participants } = await supabase
+    .from('match_participants')
+    .select(`
+      player_id,
+      team,
+      status,
+      profiles (
+        level_score,
+        total_matches,
+        wins,
+        losses,
+        reliability_score
+      )
+    `)
     .eq('match_id', matchId)
+    .eq('status', 'confirmed');
 
-  const matchPlayers = (matchPlayersRaw || []) as MatchPlayerRow[]
-  const acceptedPlayers = matchPlayers.filter((p) => p.status === 'accepted')
-
-  // Verify the caller is a participant
-  const isParticipant = acceptedPlayers.some((p) => p.player_id === user.id)
-  if (!isParticipant) {
-    return NextResponse.json(
-      { error: 'Tu ne participes pas à ce match.' },
-      { status: 403 },
-    )
+  if (!participants || participants.length === 0) {
+    return NextResponse.json({ error: 'No participants' }, { status: 400 });
   }
 
-  if (acceptedPlayers.length === 0) {
-    return NextResponse.json({ error: 'Aucun joueur accepté.' }, { status: 400 })
-  }
+  // 3. Parse scores into sets
+  const scoresA = match.score_team_a.split('/').map(Number);
+  const scoresB = match.score_team_b.split('/').map(Number);
+  const sets = scoresA.map((a: number, i: number) => ({
+    score_a: a,
+    score_b: scoresB[i] ?? 0,
+  }));
 
-  // 3. Load sets
-  const { data: setsRaw } = await supabase
-    .from('match_sets')
-    .select('set_number, team1_score, team2_score')
-    .eq('match_id', matchId)
-    .order('set_number')
+  const matchResult: MatchResult = {
+    winner_team: match.winner_team,
+    sets,
+  };
 
-  const sets = (setsRaw || []) as MatchSetRow[]
-
-  // 4. Load player profiles
-  const playerIds = acceptedPlayers.map((p) => p.player_id)
-  const { data: profilesRaw } = await supabase
-    .from('profiles')
-    .select('id, computed_level, matches_played, wins, reliability_score, city')
-    .in('id', playerIds)
-
-  const profiles = (profilesRaw || []) as ProfileRow[]
-  const profileMap = new Map(profiles.map((p) => [p.id, p]))
-
-  // 5. Calculate ELO changes (server-side, tamper-proof)
-  const eloPlayers: EloPlayerInput[] = acceptedPlayers.map((mp) => {
-    const prof = profileMap.get(mp.player_id)
+  // 4. Build ELO players
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const eloPlayers: EloPlayer[] = participants.map((p: any) => {
+    const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
     return {
-      playerId: mp.player_id,
-      team: mp.team as 1 | 2,
-      currentLevel: prof?.computed_level ?? 3.0,
-      matchesPlayed: prof?.matches_played ?? 0,
-    }
-  })
+      id: p.player_id,
+      level_score: profile?.level_score ?? 3.0,
+      total_matches: profile?.total_matches ?? 0,
+      team: p.team ?? 'A',
+    };
+  });
 
-  const eloResult: EloMatchResult = {
-    sets: sets.map((s) => ({ team1: s.team1_score, team2: s.team2_score })),
-    winnerTeam: match.winner_team as 1 | 2,
-  }
+  // 5. Calculate ELO changes
+  const eloResults = calculateEloChanges(eloPlayers, matchResult);
 
-  const eloChanges = calculateEloChanges(eloPlayers, eloResult)
+  // 6. Update each player
+  for (const result of eloResults) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const participant = participants.find((p: any) => p.player_id === result.player_id);
+    const profile = participant
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? (Array.isArray((participant as any).profiles) ? (participant as any).profiles[0] : (participant as any).profiles)
+      : null;
 
-  // 6. Compute total games won/lost
-  let totalGamesTeam1 = 0
-  let totalGamesTeam2 = 0
-  let setsTeam1Won = 0
-  let setsTeam2Won = 0
-  for (const s of sets) {
-    totalGamesTeam1 += s.team1_score
-    totalGamesTeam2 += s.team2_score
-    if (s.team1_score > s.team2_score) setsTeam1Won++
-    else if (s.team2_score > s.team1_score) setsTeam2Won++
-  }
+    const isWinner = participant?.team === match.winner_team;
+    const currentWins = profile?.wins ?? 0;
+    const currentLosses = profile?.losses ?? 0;
+    const currentMatches = profile?.total_matches ?? 0;
 
-  // 7. Batch load existing win streaks for reliability
-  const { data: existingStatsRaw } = await supabase
-    .from('player_stats')
-    .select('player_id, win_streak')
-    .in('player_id', playerIds)
-    .eq('period', 'all_time')
-    .eq('period_start', '2000-01-01')
+    const newWins = isWinner ? currentWins + 1 : currentWins;
+    const newLosses = isWinner ? currentLosses : currentLosses + 1;
+    const newTotal = currentMatches + 1;
+    const newWinRate = newTotal > 0 ? Math.round((newWins / newTotal) * 100 * 100) / 100 : 0;
 
-  const existingStatsForReliability = new Map<string, number>()
-  for (const row of (existingStatsRaw || []) as Array<{ player_id: string; win_streak: number }>) {
-    existingStatsForReliability.set(row.player_id, row.win_streak ?? 0)
-  }
+    // Update reliability
+    const newReliability = calculateReliability({
+      current_score: profile?.reliability_score ?? 1.0,
+      total_matches: currentMatches,
+      event: 'played',
+    });
 
-  // 8. Update each player
-  for (const change of eloChanges) {
-    const prof = profileMap.get(change.playerId)
-    if (!prof) continue
-
-    const mp = acceptedPlayers.find((p) => p.player_id === change.playerId)
-    if (!mp) continue
-
-    const isWinner = mp.team === match.winner_team
-    const playerTeam = mp.team as 1 | 2
-
-    // Update reliability score
-    const consecutiveCompleted = isWinner
-      ? ((existingStatsForReliability.get(change.playerId) ?? 0) + 1)
-      : 0
-    const reliabilityDelta = calculateReliabilityChange(
-      'completed',
-      prof.reliability_score,
-      consecutiveCompleted,
-    )
-    const newReliability = Math.max(0, Math.min(100, prof.reliability_score + reliabilityDelta))
+    // Determine level enum from score
+    const levelEnum = scoreToLevel(result.new_score);
 
     // Update profile
     await supabase
       .from('profiles')
       .update({
-        computed_level: change.newLevel,
-        matches_played: prof.matches_played + 1,
-        wins: isWinner ? prof.wins + 1 : prof.wins,
+        level_score: result.new_score,
+        level: levelEnum,
+        total_matches: newTotal,
+        wins: newWins,
+        losses: newLosses,
+        win_rate: newWinRate,
         reliability_score: newReliability,
       })
-      .eq('id', change.playerId)
+      .eq('id', result.player_id);
 
-    // Update match_players with rating change
-    await supabase
-      .from('match_players')
-      .update({ rating_change: change.ratingChange })
-      .eq('match_id', matchId)
-      .eq('player_id', change.playerId)
+    // Insert player_stats record
+    const totalSetsWon = sets.reduce(
+      (acc: number, s: { score_a: number; score_b: number }) =>
+        acc + (participant?.team === 'A' ? (s.score_a > s.score_b ? 1 : 0) : (s.score_b > s.score_a ? 1 : 0)),
+      0,
+    );
+    const totalSetsLost = sets.length - totalSetsWon;
 
-    // Upsert all_time player_stats
-    const setsWon = playerTeam === 1 ? setsTeam1Won : setsTeam2Won
-    const setsLost = playerTeam === 1 ? setsTeam2Won : setsTeam1Won
-    const gamesWon = playerTeam === 1 ? totalGamesTeam1 : totalGamesTeam2
-    const gamesLost = playerTeam === 1 ? totalGamesTeam2 : totalGamesTeam1
+    // Find partner
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const partner = participants.find((p: any) =>
+      p.player_id !== result.player_id && p.team === participant?.team,
+    );
 
-    const { data: existingStats } = await supabase
-      .from('player_stats')
-      .select('id, matches_played, wins, losses, sets_won, sets_lost, games_won, games_lost, win_streak, best_streak')
-      .eq('player_id', change.playerId)
-      .eq('period', 'all_time')
-      .eq('period_start', '2000-01-01')
-      .single()
-
-    if (existingStats) {
-      const current = existingStats as PlayerStatsRow
-      const currentWinStreak = isWinner ? (current.win_streak || 0) + 1 : 0
-      const currentBestStreak = Math.max(current.best_streak || 0, currentWinStreak)
-
-      await supabase
-        .from('player_stats')
-        .update({
-          matches_played: (current.matches_played || 0) + 1,
-          wins: (current.wins || 0) + (isWinner ? 1 : 0),
-          losses: (current.losses || 0) + (isWinner ? 0 : 1),
-          sets_won: (current.sets_won || 0) + setsWon,
-          sets_lost: (current.sets_lost || 0) + setsLost,
-          games_won: (current.games_won || 0) + gamesWon,
-          games_lost: (current.games_lost || 0) + gamesLost,
-          win_streak: currentWinStreak,
-          best_streak: currentBestStreak,
-          level_at_period: change.newLevel,
-        })
-        .eq('id', current.id)
-    } else {
-      await supabase
-        .from('player_stats')
-        .insert({
-          player_id: change.playerId,
-          period: 'all_time',
-          period_start: '2000-01-01',
-          matches_played: 1,
-          wins: isWinner ? 1 : 0,
-          losses: isWinner ? 0 : 1,
-          sets_won: setsWon,
-          sets_lost: setsLost,
-          games_won: gamesWon,
-          games_lost: gamesLost,
-          win_streak: isWinner ? 1 : 0,
-          best_streak: isWinner ? 1 : 0,
-          level_at_period: change.newLevel,
-        })
-    }
+    await supabase.from('player_stats').insert({
+      player_id: result.player_id,
+      match_id: matchId,
+      partner_id: partner?.player_id ?? null,
+      was_winner: isWinner,
+      sets_won: totalSetsWon,
+      sets_lost: totalSetsLost,
+      level_before: result.old_score,
+      level_after: result.new_score,
+      level_change: result.change,
+    });
   }
 
-  // 9. Update partner history
-  async function upsertPartnerHistory(
-    playerId: string,
-    partnerId: string,
-    isTogether: boolean,
-    isWin: boolean,
-  ) {
-    const { data: existing } = await supabase
-      .from('partner_history')
-      .select('matches_together, wins_together, matches_against, wins_against')
-      .eq('player_id', playerId)
-      .eq('partner_id', partnerId)
-      .single()
+  return NextResponse.json({
+    success: true,
+    results: eloResults,
+  });
+}
 
-    if (existing) {
-      const row = existing as PartnerHistoryRow
-      await supabase
-        .from('partner_history')
-        .update({
-          matches_together: (row.matches_together || 0) + (isTogether ? 1 : 0),
-          wins_together: (row.wins_together || 0) + (isTogether && isWin ? 1 : 0),
-          matches_against: (row.matches_against || 0) + (!isTogether ? 1 : 0),
-          wins_against: (row.wins_against || 0) + (!isTogether && isWin ? 1 : 0),
-          last_played_at: new Date().toISOString(),
-        })
-        .eq('player_id', playerId)
-        .eq('partner_id', partnerId)
-    } else {
-      await supabase.from('partner_history').insert({
-        player_id: playerId,
-        partner_id: partnerId,
-        matches_together: isTogether ? 1 : 0,
-        wins_together: isTogether && isWin ? 1 : 0,
-        matches_against: !isTogether ? 1 : 0,
-        wins_against: !isTogether && isWin ? 1 : 0,
-        last_played_at: new Date().toISOString(),
-      })
-    }
-  }
-
-  for (const p of acceptedPlayers) {
-    const isWinner = p.team === match.winner_team
-    for (const other of acceptedPlayers) {
-      if (other.player_id === p.player_id) continue
-      const isTogether = p.team === other.team
-      await upsertPartnerHistory(p.player_id, other.player_id, isTogether, isWinner)
-    }
-  }
-
-  // 10. Update city rankings
-  try {
-    await updateRankingsForPlayers(playerIds, supabase)
-  } catch {
-    console.warn('Mise à jour des classements échouée (non bloquant)')
-  }
-
-  return NextResponse.json({ success: true })
+function scoreToLevel(score: number): string {
+  if (score < 2.5) return 'debutant';
+  if (score < 4.0) return 'initie';
+  if (score < 5.5) return 'intermediaire';
+  if (score < 7.0) return 'avance';
+  if (score < 8.5) return 'expert';
+  return 'competition';
 }

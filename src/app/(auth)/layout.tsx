@@ -1,11 +1,22 @@
 export default function AuthLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center bg-background px-5 py-8">
-      {children}
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-navy px-4">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-white">
+            Padelia
+          </h1>
+          <p className="mt-2 text-sm text-gray-400">
+            Joue mieux, plus souvent, avec les bons partenaires.
+          </p>
+        </div>
+        {children}
+      </div>
     </div>
-  )
+  );
 }
