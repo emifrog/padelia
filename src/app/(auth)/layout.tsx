@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function AuthLayout({
   children,
 }: {
@@ -8,9 +10,14 @@ export default function AuthLayout({
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-white">
-            Padelia
-          </h1>
+          <Image
+            src="/logo-remove.png"
+            alt="Padelia"
+            width={200}
+            height={60}
+            className="mx-auto"
+            priority
+          />
           <p className="mt-2 text-sm text-gray-400">
             Joue mieux, plus souvent, avec les bons partenaires.
           </p>
