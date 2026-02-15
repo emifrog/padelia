@@ -92,8 +92,8 @@ export default async function MatchDetailPage({ params }: PageProps) {
           <Link href="/matchs"><ChevronLeft className="h-5 w-5" /></Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-xl font-bold">{match.title ?? 'Match'}</h1>
-          <p className="text-xs text-muted-foreground">
+          <h1 className="text-xl font-bold text-navy">{match.title ?? 'Match'}</h1>
+          <p className="text-xs text-gray-400">
             Organisé par {organizer?.full_name ?? 'Inconnu'}
           </p>
         </div>
@@ -109,64 +109,64 @@ export default async function MatchDetailPage({ params }: PageProps) {
 
       {/* Description */}
       {match.description && (
-        <p className="text-sm text-muted-foreground">{match.description}</p>
+        <p className="text-sm text-gray-400">{match.description}</p>
       )}
 
       {/* Info cards */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
-          <Calendar className="h-5 w-5 text-primary" />
+        <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-padel">
+          <Calendar className="h-5 w-5 text-green-padel" />
           <div>
             <p className="text-sm font-medium">
               {date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-400">
               {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
-          <Clock className="h-5 w-5 text-primary" />
+        <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-padel">
+          <Clock className="h-5 w-5 text-green-padel" />
           <div>
             <p className="text-sm font-medium">{match.duration_minutes} min</p>
-            <p className="text-xs text-muted-foreground">Durée</p>
+            <p className="text-xs text-gray-400">Durée</p>
           </div>
         </div>
         {match.location_name && (
-          <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
-            <MapPin className="h-5 w-5 text-primary" />
+          <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-padel">
+            <MapPin className="h-5 w-5 text-green-padel" />
             <div>
               <p className="text-sm font-medium">{match.location_name}</p>
-              <p className="text-xs text-muted-foreground">Lieu</p>
+              <p className="text-xs text-gray-400">Lieu</p>
             </div>
           </div>
         )}
-        <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
-          <Users className="h-5 w-5 text-primary" />
+        <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-padel">
+          <Users className="h-5 w-5 text-green-padel" />
           <div>
             <p className="text-sm font-medium">{participantCount}/{match.max_players}</p>
-            <p className="text-xs text-muted-foreground">Joueurs</p>
+            <p className="text-xs text-gray-400">Joueurs</p>
           </div>
         </div>
         {match.cost_per_player > 0 && (
-          <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
-            <Euro className="h-5 w-5 text-primary" />
+          <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-padel">
+            <Euro className="h-5 w-5 text-green-padel" />
             <div>
               <p className="text-sm font-medium">{match.cost_per_player}€</p>
-              <p className="text-xs text-muted-foreground">Par joueur</p>
+              <p className="text-xs text-gray-400">Par joueur</p>
             </div>
           </div>
         )}
         {(match.min_level || match.max_level) && (
-          <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
-            <Trophy className="h-5 w-5 text-primary" />
+          <div className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-padel">
+            <Trophy className="h-5 w-5 text-green-padel" />
             <div>
               <p className="text-sm font-medium">
                 {match.min_level ? LEVEL_LABELS[match.min_level as PlayerLevel] : '—'}
                 {' → '}
                 {match.max_level ? LEVEL_LABELS[match.max_level as PlayerLevel] : '—'}
               </p>
-              <p className="text-xs text-muted-foreground">Niveau requis</p>
+              <p className="text-xs text-gray-400">Niveau requis</p>
             </div>
           </div>
         )}
@@ -176,21 +176,21 @@ export default async function MatchDetailPage({ params }: PageProps) {
 
       {/* Participants list */}
       <div className="space-y-3">
-        <h2 className="font-semibold">Joueurs ({participantCount}/{match.max_players})</h2>
+        <h2 className="font-semibold text-navy">Joueurs ({participantCount}/{match.max_players})</h2>
         {(participants ?? []).length > 0 ? (
           <div className="space-y-2">
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {(participants ?? []).map((p: any) => {
               const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
               return (
-                <div key={p.id} className="flex items-center justify-between rounded-xl border bg-card p-3">
+                <div key={p.id} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-padel">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-padel/10 text-sm font-bold text-green-padel">
                       {profile?.full_name?.charAt(0)?.toUpperCase() ?? '?'}
                     </div>
                     <div>
                       <p className="text-sm font-medium">{profile?.full_name ?? 'Joueur'}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-gray-400">
                         {profile?.level_score ?? '—'} · @{profile?.username ?? ''}
                       </p>
                     </div>
@@ -202,7 +202,7 @@ export default async function MatchDetailPage({ params }: PageProps) {
                       </Badge>
                     )}
                     {p.role === 'organizer' && (
-                      <Badge className="text-xs bg-primary/10 text-primary">Orga</Badge>
+                      <Badge className="text-xs bg-green-padel/10 text-green-padel">Orga</Badge>
                     )}
                   </div>
                 </div>
@@ -210,7 +210,7 @@ export default async function MatchDetailPage({ params }: PageProps) {
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Aucun joueur pour le moment</p>
+          <p className="text-sm text-gray-400">Aucun joueur pour le moment</p>
         )}
       </div>
 
@@ -219,16 +219,16 @@ export default async function MatchDetailPage({ params }: PageProps) {
         <>
           <Separator />
           <div className="space-y-3">
-            <h2 className="font-semibold">Résultat</h2>
-            <div className="flex items-center justify-center gap-6 rounded-xl border bg-card p-4">
-              <div className={cn('text-center', match.winner_team === 'A' && 'text-primary')}>
+            <h2 className="font-semibold text-navy">Résultat</h2>
+            <div className="flex items-center justify-center gap-6 rounded-xl bg-white p-4 shadow-padel">
+              <div className={cn('text-center', match.winner_team === 'A' && 'text-green-padel')}>
                 <p className="text-3xl font-bold">{match.score_team_a}</p>
-                <p className="text-xs text-muted-foreground">Équipe A</p>
+                <p className="text-xs text-gray-400">Équipe A</p>
               </div>
-              <span className="text-lg text-muted-foreground">—</span>
-              <div className={cn('text-center', match.winner_team === 'B' && 'text-primary')}>
+              <span className="text-lg text-gray-400">—</span>
+              <div className={cn('text-center', match.winner_team === 'B' && 'text-green-padel')}>
                 <p className="text-3xl font-bold">{match.score_team_b}</p>
-                <p className="text-xs text-muted-foreground">Équipe B</p>
+                <p className="text-xs text-gray-400">Équipe B</p>
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import { usePlayerSuggestions } from '@/hooks/use-player-suggestions';
 import { Loader2, UserSearch, MapPin } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function SuggestionsSection() {
@@ -52,9 +53,11 @@ export default function SuggestionsSection() {
             {/* Avatar */}
             <div className="relative mx-auto mb-2 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-green-subtle text-[26px]">
               {profile.avatar_url ? (
-                <img
+                <Image
                   src={profile.avatar_url}
-                  alt={profile.full_name}
+                  alt={profile.full_name ?? 'Avatar'}
+                  width={52}
+                  height={52}
                   className="h-[52px] w-[52px] rounded-full object-cover"
                 />
               ) : (

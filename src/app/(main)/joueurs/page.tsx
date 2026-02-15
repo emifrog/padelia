@@ -35,12 +35,12 @@ export default function JoueursPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Joueurs</h1>
+      <h1 className="text-2xl font-bold text-navy">Joueurs</h1>
 
       {/* Search + Filter toggle */}
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
             placeholder="Chercher un joueur, une ville..."
             value={search}
@@ -59,17 +59,17 @@ export default function JoueursPage() {
 
       {/* Filters panel */}
       {showFilters && (
-        <div className="space-y-3 rounded-xl border bg-card p-4">
+        <div className="space-y-3 rounded-xl bg-white p-4 shadow-padel">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Niveau</label>
+            <label className="text-sm font-medium text-navy">Niveau</label>
             <div className="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={() => setLevelFilter('')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                   !levelFilter
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    ? 'bg-navy text-white shadow-padel-md'
+                    : 'bg-gray-50 text-gray-500'
                 }`}
               >
                 Tous
@@ -79,10 +79,10 @@ export default function JoueursPage() {
                   key={level}
                   type="button"
                   onClick={() => setLevelFilter(level)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                     levelFilter === level
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      ? 'bg-navy text-white shadow-padel-md'
+                      : 'bg-gray-50 text-gray-500'
                   }`}
                 >
                   {LEVEL_LABELS[level]}
@@ -92,8 +92,8 @@ export default function JoueursPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Distance max : <span className="text-primary">{distanceFilter} km</span>
+            <label className="text-sm font-medium text-navy">
+              Distance max : <span className="text-green-padel">{distanceFilter} km</span>
             </label>
             <input
               type="range"
@@ -102,9 +102,9 @@ export default function JoueursPage() {
               step={5}
               value={distanceFilter}
               onChange={(e) => setDistanceFilter(Number(e.target.value))}
-              className="w-full accent-primary"
+              className="w-full accent-green-500"
             />
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-xs text-gray-400">
               <span>5 km</span>
               <span>100 km</span>
             </div>
@@ -115,7 +115,7 @@ export default function JoueursPage() {
       {/* Results */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-green-padel" />
         </div>
       ) : error ? (
         <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
@@ -123,15 +123,15 @@ export default function JoueursPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Search className="mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="font-medium">Aucun joueur trouvé</p>
-          <p className="text-sm text-muted-foreground">
+          <Search className="mb-2 h-8 w-8 text-gray-300" />
+          <p className="font-medium text-navy">Aucun joueur trouvé</p>
+          <p className="text-sm text-gray-400">
             Essaie d&apos;élargir tes filtres
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-gray-400">
             {filtered.length} joueur{filtered.length > 1 ? 's' : ''} trouvé{filtered.length > 1 ? 's' : ''}
           </p>
           {filtered.map((s) => (

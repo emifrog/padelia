@@ -56,7 +56,7 @@ export default async function GroupesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Groupes</h1>
+        <h1 className="text-2xl font-bold text-navy">Groupes</h1>
         <Button size="sm" asChild>
           <Link href="/groupes/creer">
             <Plus className="mr-1.5 h-4 w-4" />
@@ -67,7 +67,7 @@ export default async function GroupesPage() {
 
       {/* My groups */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Mes groupes</h2>
+        <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-gray-400">Mes groupes</h2>
         {myGroups.length > 0 ? (
           <div className="space-y-1">
             {myGroups.map((group) => (
@@ -76,8 +76,8 @@ export default async function GroupesPage() {
           </div>
         ) : (
           <div className="rounded-xl border border-dashed p-6 text-center">
-            <Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
+            <Users className="mx-auto mb-2 h-8 w-8 text-gray-400" />
+            <p className="text-sm text-gray-400">
               Tu n&apos;as rejoint aucun groupe
             </p>
           </div>
@@ -87,7 +87,7 @@ export default async function GroupesPage() {
       {/* Discover */}
       {publicGroups.length > 0 && (
         <section>
-          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Découvrir</h2>
+          <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-gray-400">Découvrir</h2>
           <div className="space-y-1">
             {publicGroups.map((group) => (
               <GroupCard key={group.id} group={group} />

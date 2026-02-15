@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { LEVEL_LABELS, SIDE_LABELS, STYLE_LABELS } from '@/types';
 import type { PlayerLevel, PlayingSide, PlayStyle } from '@/types';
 import { Calendar, ChevronRight, Pencil, Bell, Settings, Star, Crown } from 'lucide-react';
+import Image from 'next/image';
 import LogoutButton from '@/components/layout/LogoutButton';
 
 export const metadata = { title: 'Profil' };
@@ -39,9 +40,11 @@ export default async function ProfilPage() {
           {/* Avatar */}
           <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full border-[3px] border-green-padel/35 bg-gradient-to-br from-green-padel/20 to-lime-padel/20 text-4xl">
             {profile.avatar_url ? (
-              <img
+              <Image
                 src={profile.avatar_url}
-                alt={profile.full_name}
+                alt={profile.full_name ?? 'Avatar'}
+                width={72}
+                height={72}
                 className="h-full w-full rounded-full object-cover"
               />
             ) : (

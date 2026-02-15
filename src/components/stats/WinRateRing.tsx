@@ -19,7 +19,7 @@ export default function WinRateRing({ winRate, size = 80 }: Props) {
           fill="none"
           stroke="currentColor"
           strokeWidth={6}
-          className="text-muted"
+          className="text-gray-100"
         />
         {/* Progress circle */}
         <circle
@@ -32,10 +32,10 @@ export default function WinRateRing({ winRate, size = 80 }: Props) {
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          className="text-primary transition-all"
+          className="text-green-padel transition-all"
         />
       </svg>
-      <span className="absolute text-lg font-bold">{winRate}%</span>
+      <span className="absolute text-lg font-bold text-navy">{winRate}%</span>
     </div>
   );
 }

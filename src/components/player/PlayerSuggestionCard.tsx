@@ -5,6 +5,7 @@ import type { PlayerLevel, PlayingSide, PlayStyle } from '@/types';
 import type { SuggestedPlayer } from '@/hooks/use-player-suggestions';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, TrendingUp, Shield, Target } from 'lucide-react';
+import Image from 'next/image';
 
 interface Props {
   suggestion: SuggestedPlayer;
@@ -37,9 +38,11 @@ export default function PlayerSuggestionCard({ suggestion, onPress }: Props) {
       <div className="flex items-start gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
           {profile.avatar_url ? (
-            <img
+            <Image
               src={profile.avatar_url}
-              alt={profile.full_name}
+              alt={profile.full_name ?? 'Avatar'}
+              width={48}
+              height={48}
               className="h-12 w-12 rounded-full object-cover"
             />
           ) : (

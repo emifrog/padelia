@@ -94,6 +94,9 @@ CREATE TABLE profiles (
   stripe_customer_id TEXT,
   premium_expires_at TIMESTAMPTZ,
 
+  -- Préférences notifications (JSONB)
+  notification_preferences JSONB DEFAULT '{"push_enabled":true,"email_match_invite":true,"email_match_reminder":true,"push_new_message":true,"push_match_update":true,"push_group_activity":true}'::jsonb,
+
   -- Méta
   is_onboarded BOOLEAN DEFAULT false,
   push_token TEXT,
@@ -494,10 +497,10 @@ CREATE TRIGGER tr_groups_updated_at BEFORE UPDATE ON groups
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- Auto-create profile on signup
-CREATE OR REPLACE FUNCTION handle_new_user()
+CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, email, full_name, username)
+  INSERT INTO public.profiles (id, email, full_name, username)
   VALUES (
     NEW.id,
     NEW.email,
@@ -509,7 +512,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users

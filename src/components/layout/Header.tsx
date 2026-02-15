@@ -45,7 +45,7 @@ export default function Header() {
 
         {/* Bell with red notification dot */}
         <Link
-          href="/notifications"
+          href="/profil/notifications"
           className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-padel"
         >
           <Bell className="h-[22px] w-[22px] text-navy" />

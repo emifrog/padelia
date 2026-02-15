@@ -1,12 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LEVEL_LABELS } from '@/types';
-import type { PlayerLevel } from '@/types';
-import { ChevronLeft, Trophy, Medal } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ChevronLeft } from 'lucide-react';
+import { RankingList } from '@/components/stats/RankingList';
 
 export const metadata = { title: 'Classements' };
 
@@ -45,72 +42,13 @@ export default async function ClassementsPage() {
     cityRanking = data;
   }
 
-  function getRankIcon(index: number) {
-    if (index === 0) return <Trophy className="h-5 w-5 text-yellow-500" />;
-    if (index === 1) return <Medal className="h-5 w-5 text-gray-400" />;
-    if (index === 2) return <Medal className="h-5 w-5 text-amber-700" />;
-    return <span className="flex h-5 w-5 items-center justify-center text-xs text-muted-foreground">{index + 1}</span>;
-  }
-
-  function RankingList({ players, title }: { players: typeof globalRanking; title: string }) {
-    if (!players || players.length === 0) {
-      return (
-        <div className="rounded-xl border border-dashed p-6 text-center">
-          <p className="text-sm text-muted-foreground">Aucun joueur classé</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-2">
-        <h2 className="font-semibold">{title}</h2>
-        {players.map((p, i) => (
-          <div
-            key={p.id}
-            className={cn(
-              'flex items-center justify-between rounded-xl border bg-card p-3',
-              p.id === user?.id && 'border-primary bg-primary/5',
-            )}
-          >
-            <div className="flex items-center gap-3">
-              {getRankIcon(i)}
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                {p.full_name?.charAt(0)?.toUpperCase()}
-              </div>
-              <div>
-                <p className="text-sm font-medium">
-                  {p.full_name}
-                  {p.id === user?.id && <span className="ml-1 text-xs text-primary">(toi)</span>}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  @{p.username} · {p.city ?? ''}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-bold text-primary">{p.level_score}</p>
-              <div className="flex items-center gap-1">
-                <Badge variant="secondary" className="text-[10px]">
-                  {LEVEL_LABELS[p.level as PlayerLevel]}
-                </Badge>
-                <span className="text-[10px] text-muted-foreground">
-                  {p.win_rate}%
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/stats"><ChevronLeft className="h-5 w-5" /></Link>
         </Button>
-        <h1 className="text-xl font-bold">Classements</h1>
+        <h1 className="text-xl font-bold text-navy">Classements</h1>
       </div>
 
       {/* City ranking */}
@@ -118,6 +56,7 @@ export default async function ClassementsPage() {
         <RankingList
           players={cityRanking}
           title={`Classement ${myProfile.city}`}
+          currentUserId={user.id}
         />
       )}
 
@@ -125,6 +64,7 @@ export default async function ClassementsPage() {
       <RankingList
         players={globalRanking}
         title="Classement général"
+        currentUserId={user.id}
       />
     </div>
   );

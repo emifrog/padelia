@@ -76,7 +76,7 @@ src/
 
 **RLS** activé sur toutes les tables. Triggers pour : updated_at auto, création profil auto, mise à jour conversation, compteur membres groupe.
 
-Schéma complet dans `supabase/migrations/001_initial_schema.sql`
+Schéma complet dans `supabase/schema.sql`
 
 ## Algorithme de Matching
 Score composite sur 100 points :
@@ -191,7 +191,7 @@ src/
 
 **RLS** activé sur toutes les tables. Triggers pour : updated_at auto, création profil auto, mise à jour conversation, compteur membres groupe.
 
-Schéma complet dans `supabase/migrations/001_initial_schema.sql`
+Schéma complet dans `supabase/schema.sql`
 
 ## Algorithme de Matching
 Score composite sur 100 points :

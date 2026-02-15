@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Users, Lock, Globe, Mail } from 'lucide-react';
+import { Users, Lock, Globe, Mail, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface GroupCardProps {
@@ -29,25 +29,25 @@ export default function GroupCard({ group }: GroupCardProps) {
   return (
     <Link
       href={`/groupes/${group.id}`}
-      className="flex items-center gap-3 rounded-xl p-3 transition-colors hover:bg-accent active:scale-[0.99]"
+      className="flex items-center gap-3 rounded-xl bg-white p-3.5 shadow-padel transition-transform active:scale-[0.98]"
     >
       {/* Avatar */}
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold text-primary">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-lime-padel/15 text-lg font-bold text-navy">
         {group.name.charAt(0).toUpperCase()}
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="truncate text-sm font-semibold">{group.name}</p>
-          <VisibilityIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <p className="truncate text-[14px] font-bold text-navy">{group.name}</p>
+          <VisibilityIcon className="h-3.5 w-3.5 shrink-0 text-gray-300" />
         </div>
         {group.description && (
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="truncate text-[12px] text-gray-400">
             {group.description}
           </p>
         )}
-        <div className="mt-1 flex items-center gap-3 text-[10px] text-muted-foreground">
+        <div className="mt-1 flex items-center gap-3 text-[11px] text-gray-400">
           <span className="flex items-center gap-0.5">
             <Users className="h-3 w-3" />
             {group.member_count}/{group.max_members}
@@ -60,6 +60,8 @@ export default function GroupCard({ group }: GroupCardProps) {
           )}
         </div>
       </div>
+
+      <ChevronRight className="h-4 w-4 shrink-0 text-gray-300" />
     </Link>
   );
 }
