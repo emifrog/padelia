@@ -1,9 +1,9 @@
-# CLAUDE.md — PadelMatch
+# CLAUDE.md — Padelia
 
 ## Vision
-PadelMatch est une PWA mobile-first de référence pour les joueurs de padel. Clone amélioré de Padel Mates avec un matching intelligent supérieur et un focus sur la progression des joueurs.
+Padelia est une PWA mobile-first de reference pour les joueurs de padel. Clone ameliore de Padel Mates avec un matching intelligent superieur et un focus sur la progression des joueurs.
 
-**Promesse** : « Joue mieux, plus souvent, avec les bons partenaires. »
+**Promesse** : "Joue mieux, plus souvent, avec les bons partenaires."
 
 ## Stack Technique
 - **Framework** : Next.js 15 (App Router) + React 19 + TypeScript 5.6+
@@ -17,7 +17,7 @@ PadelMatch est une PWA mobile-first de référence pour les joueurs de padel. Cl
 - **Notifications** : Web Push API + FCM + Resend (emails)
 - **PWA** : Serwist (Service Worker, cache, install prompt)
 - **Tests** : Vitest + Playwright
-- **Deploy** : Vercel
+- **Deploy** : Vercel (https://padelia-beta.vercel.app)
 
 ## Structure du Projet
 ```
@@ -25,16 +25,16 @@ src/
 ├── app/                    # Next.js App Router
 │   ├── (auth)/             # Login, register, reset, onboarding
 │   ├── (main)/             # Layout avec bottom nav
-│   │   ├── accueil/        # Feed personnalisé
+│   │   ├── accueil/        # Feed personnalise
 │   │   ├── matchs/         # CRUD matchs + recherche
 │   │   ├── carte/          # Carte Mapbox interactive
 │   │   ├── joueurs/        # Recherche + profils joueurs
 │   │   ├── chat/           # Conversations + messages
-│   │   ├── groupes/        # Communautés
-│   │   ├── clubs/          # Annuaire + réservation
-│   │   ├── tournois/       # Compétitions
+│   │   ├── groupes/        # Communautes
+│   │   ├── clubs/          # Annuaire + reservation
+│   │   ├── tournois/       # Competitions
 │   │   ├── stats/          # Dashboard stats + progression
-│   │   └── profil/         # Mon profil + paramètres
+│   │   └── profil/         # Mon profil + parametres
 │   └── api/                # Webhooks Stripe, etc.
 ├── components/
 │   ├── ui/                 # shadcn/ui
@@ -43,61 +43,58 @@ src/
 │   ├── chat/               # ChatWindow, MessageBubble
 │   ├── map/                # MapView, ClubMarker
 │   ├── stats/              # Charts, ProgressionGraph
-│   └── layout/             # Navbar, BottomNav
+│   ├── layout/             # Header, BottomNav, PushPermission, GeolocationPermission
+│   └── providers/          # QueryProvider (TanStack Query)
 ├── lib/
 │   ├── supabase/           # Clients (browser, server, admin)
 │   ├── stripe/             # Config Stripe
 │   ├── matching/           # Algorithme de matching
-│   ├── ranking/            # Système de classement
+│   ├── ranking/            # Systeme de classement (ELO + reliability)
+│   ├── notifications/      # Push + Email (Resend)
 │   └── utils/              # Helpers
-├── hooks/                  # Custom React hooks
+├── hooks/                  # Custom React hooks (use-player-suggestions, use-chat-realtime)
 ├── types/                  # TypeScript + database.ts
 └── stores/                 # Zustand stores
 ```
 
 ## Conventions
 - **Composants** : PascalCase, un fichier par composant
-- **Hooks** : préfixe `use*`, un hook par fichier
-- **Server Actions** : préfixe `action*`
+- **Hooks** : prefixe `use*`, un hook par fichier
+- **Server Actions** : prefixe `action*`
 - **Fichiers** : kebab-case
 - **Commits** : Conventional Commits (feat:, fix:, chore:, docs:)
 - **Toujours** : TypeScript strict, pas de `any`, Zod pour toute validation
-- **Style** : Tailwind utility classes, pas de CSS custom sauf nécessité absolue
-- **Exports** : Named exports par défaut (sauf pages Next.js)
+- **Style** : Tailwind utility classes, pas de CSS custom sauf necessite absolue
+- **Exports** : Named exports par defaut (sauf pages Next.js)
 - **Erreurs** : Error boundaries par section, toast pour feedback utilisateur
-- **Langue** : UI en français, code en anglais
+- **Langue** : UI en francais, code en anglais
+- **Performance** : React.memo sur composants listes, TanStack Query pour cache, Promise.all pour queries paralleles, pas de N+1
 
-## Base de Données (résumé)
+## Base de Donnees (resume)
 14 tables : profiles, clubs, courts, groups, group_members, matches, match_participants, bookings, conversations, conversation_members, messages, notifications, player_stats, club_reviews
 
-**Enums clés** : player_level (6 niveaux), playing_side, play_style, match_status, participant_status, payment_status, notification_type
+**Enums cles** : player_level (6 niveaux), playing_side, play_style, match_status, participant_status, payment_status, notification_type
 
 **Fonctions SQL** : haversine_distance(), find_nearby_players()
 
-**RLS** activé sur toutes les tables. Triggers pour : updated_at auto, création profil auto, mise à jour conversation, compteur membres groupe.
+**RLS** active sur toutes les tables. Triggers pour : updated_at auto, creation profil auto, mise a jour conversation, compteur membres groupe.
 
-Schéma complet dans `supabase/schema.sql`
+Schema complet dans `supabase/schema.sql`
 
 ## Algorithme de Matching
 Score composite sur 100 points :
 - **Niveau** (40%) : diff de level_score, 0 = parfait
-- **Position complémentaire** (20%) : gauche + droite = bonus max
-- **Fiabilité** (20%) : reliability_score, pénalise no-shows
-- **Proximité** (15%) : distance haversine, décroît linéairement
-- **Disponibilités** (5%) : créneaux communs
+- **Position complementaire** (20%) : gauche + droite = bonus max
+- **Fiabilite** (20%) : reliability_score, penalise no-shows
+- **Proximite** (15%) : distance haversine, decroit lineairement
+- **Disponibilites** (5%) : creneaux communs
 
-## Évolution du Niveau
-Système hybride Elo-like :
-- Auto-déclaration initiale (onboarding)
-- Ajustement post-match selon résultat + force adversaire
-- Peer feedback (30% du calcul) après chaque match
-- Score de 1.0 à 10.0, facteur K = 0.5
-
-## Roadmap (12 sprints × 1 semaine)
-**Phase 1 — Fondations** (S1-S3) : Auth, profils, onboarding, matching, recherche joueurs
-**Phase 2 — Core Match** (S4-S6) : CRUD matchs, résultats, stats, classements
-**Phase 3 — Social & Carte** (S7-S9) : Chat realtime, groupes, carte Mapbox
-**Phase 4 — Monétisation** (S10-S12) : Stripe, notifications push, PWA polish, déploiement
+## Evolution du Niveau
+Systeme hybride Elo-like :
+- Auto-declaration initiale (onboarding)
+- Ajustement post-match selon resultat + force adversaire
+- Peer feedback (30% du calcul) apres chaque match
+- Score de 1.0 a 10.0, facteur K = 0.5
 
 ## Variables d'Environnement Requises
 ```
@@ -109,122 +106,201 @@ RESEND_API_KEY
 NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 ```
 
-## Modèle Économique
+## Modele Economique
 - **Gratuit** : profil, matching basique, 3 matchs/mois, chat
-- **Premium** (5,99€/mois ou 49,99€/an) : matching illimité, stats avancées, classements
+- **Premium** (5,99EUR/mois ou 49,99EUR/an) : matching illimite, stats avancees, classements
 - **Club** (sur devis) : dashboard, gestion terrains, tournois, analytics
-# CLAUDE.md — PadelMatch
 
-## Vision
-PadelMatch est une PWA mobile-first de référence pour les joueurs de padel. Clone amélioré de Padel Mates avec un matching intelligent supérieur et un focus sur la progression des joueurs.
+---
 
-**Promesse** : « Joue mieux, plus souvent, avec les bons partenaires. »
+## Etat actuel du projet (Fevrier 2026)
 
-## Stack Technique
-- **Framework** : Next.js 15 (App Router) + React 19 + TypeScript 5.6+
-- **Backend** : Supabase (Auth, PostgreSQL, Realtime, Storage, Edge Functions)
-- **UI** : Tailwind CSS 4 + shadcn/ui + Framer Motion
-- **State** : TanStack Query (serveur) + Zustand (client)
-- **Forms** : React Hook Form + Zod
-- **Carte** : Mapbox GL JS
-- **Paiement** : Stripe (Billing + Connect + Payment Intents)
-- **Chat** : Supabase Realtime (WebSocket channels + Presence)
-- **Notifications** : Web Push API + FCM + Resend (emails)
-- **PWA** : Serwist (Service Worker, cache, install prompt)
-- **Tests** : Vitest + Playwright
-- **Deploy** : Vercel
+### Fonctionnalites IMPLEMENTEES
+| Module | Statut | Details |
+|--------|--------|---------|
+| Auth (Login/Register/Google) | FAIT | Supabase Auth, middleware, protection routes |
+| Onboarding 3 etapes | FAIT | Identite, niveau, style de jeu |
+| Profil (vue/edition/parametres) | FAIT | Tous champs, validation Zod, avatar |
+| Match CRUD | FAIT | Creer, lister, detail, rejoindre/quitter |
+| Scoring post-match | FAIT | 3 sets, calcul vainqueur, ELO |
+| Chat temps reel | FAIT | Supabase Realtime, envoi/reception, mark read |
+| Recherche joueurs + matching | FAIT | Filtre niveau/distance, algo composite 5 criteres |
+| Groupes/communautes | FAIT | CRUD, membres, admin, matchs de groupe |
+| Carte Mapbox | FAIT | Clubs + joueurs, geolocalisation, layers |
+| Stats + classements | FAIT | Win rate, streak, partenaires, historique, ELO |
+| Paiements Stripe | FAIT | Checkout, webhooks, abonnement premium |
+| PWA | FAIT | Service Worker, manifest, install prompt |
+| Geolocalisation | FAIT | Permission prompt, sauvegarde coords profil |
 
-## Structure du Projet
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── (auth)/             # Login, register, reset, onboarding
-│   ├── (main)/             # Layout avec bottom nav
-│   │   ├── accueil/        # Feed personnalisé
-│   │   ├── matchs/         # CRUD matchs + recherche
-│   │   ├── carte/          # Carte Mapbox interactive
-│   │   ├── joueurs/        # Recherche + profils joueurs
-│   │   ├── chat/           # Conversations + messages
-│   │   ├── groupes/        # Communautés
-│   │   ├── clubs/          # Annuaire + réservation
-│   │   ├── tournois/       # Compétitions
-│   │   ├── stats/          # Dashboard stats + progression
-│   │   └── profil/         # Mon profil + paramètres
-│   └── api/                # Webhooks Stripe, etc.
-├── components/
-│   ├── ui/                 # shadcn/ui
-│   ├── match/              # MatchCard, MatchForm, MatchList
-│   ├── player/             # PlayerCard, PlayerSearch
-│   ├── chat/               # ChatWindow, MessageBubble
-│   ├── map/                # MapView, ClubMarker
-│   ├── stats/              # Charts, ProgressionGraph
-│   └── layout/             # Navbar, BottomNav
-├── lib/
-│   ├── supabase/           # Clients (browser, server, admin)
-│   ├── stripe/             # Config Stripe
-│   ├── matching/           # Algorithme de matching
-│   ├── ranking/            # Système de classement
-│   └── utils/              # Helpers
-├── hooks/                  # Custom React hooks
-├── types/                  # TypeScript + database.ts
-└── stores/                 # Zustand stores
-```
+### Fonctionnalites PARTIELLEMENT implementees
+| Module | Statut | Manque |
+|--------|--------|-------|
+| Notifications push | PARTIEL | Infra OK (VAPID, SW, API), triggers auto manquants |
+| Notifications email | PARTIEL | Resend configure, templates a creer |
+| Annuaire clubs | PARTIEL | Visible sur carte, pas de page dediee |
+| Avis clubs | PARTIEL | Table club_reviews existe, pas d'UI |
 
-## Conventions
-- **Composants** : PascalCase, un fichier par composant
-- **Hooks** : préfixe `use*`, un hook par fichier
-- **Server Actions** : préfixe `action*`
-- **Fichiers** : kebab-case
-- **Commits** : Conventional Commits (feat:, fix:, chore:, docs:)
-- **Toujours** : TypeScript strict, pas de `any`, Zod pour toute validation
-- **Style** : Tailwind utility classes, pas de CSS custom sauf nécessité absolue
-- **Exports** : Named exports par défaut (sauf pages Next.js)
-- **Erreurs** : Error boundaries par section, toast pour feedback utilisateur
-- **Langue** : UI en français, code en anglais
+### Fonctionnalites MANQUANTES
+| Module | Priorite | Effort estime |
+|--------|----------|--------------|
+| Notifications auto-triggers | HAUTE | 1-2 semaines |
+| Pages clubs + avis | HAUTE | 1-2 semaines |
+| Tournois | MOYENNE | 2-3 semaines |
+| Reservation terrains (booking) | MOYENNE | 2-3 semaines |
+| Tests (Vitest + Playwright) | HAUTE | 2 semaines |
+| Pagination (listes longues) | MOYENNE | 1 semaine |
+| Rating post-match (peer feedback) | MOYENNE | 1 semaine |
+| Page offline (PWA fallback) | BASSE | 2 jours |
+| Images dans le chat | BASSE | 1 semaine |
 
-## Base de Données (résumé)
-14 tables : profiles, clubs, courts, groups, group_members, matches, match_participants, bookings, conversations, conversation_members, messages, notifications, player_stats, club_reviews
+---
 
-**Enums clés** : player_level (6 niveaux), playing_side, play_style, match_status, participant_status, payment_status, notification_type
+## Roadmap — Phases d'implementation
 
-**Fonctions SQL** : haversine_distance(), find_nearby_players()
+### PHASE 5 — Solidification (2-3 semaines)
+> Rendre l'existant robuste et pret pour de vrais utilisateurs.
 
-**RLS** activé sur toutes les tables. Triggers pour : updated_at auto, création profil auto, mise à jour conversation, compteur membres groupe.
+- [ ] **Notifications automatiques**
+  - Trigger invitation match (quand un joueur rejoint/est invite)
+  - Rappel 1h avant le match (Edge Function Supabase + cron)
+  - Notification nouveau message chat (push si app fermee)
+  - Notification acceptation dans un groupe
+  - Templates email Resend (bienvenue, rappel match, resume hebdo)
+- [ ] **Tests unitaires (Vitest)**
+  - `calculate-match-score.ts` (algo matching)
+  - `calculate-elo.ts` (systeme de classement)
+  - `reliability.ts` (score de fiabilite)
+  - Validations Zod (schemas profil, match, groupe)
+  - Hooks critiques (use-player-suggestions, use-chat-realtime)
+- [ ] **Tests E2E (Playwright)**
+  - Flow auth complet (register -> onboarding -> accueil)
+  - Flow match (creer -> rejoindre -> scorer -> stats)
+  - Flow chat (nouvelle conversation -> envoyer message)
+- [ ] **Pagination**
+  - Liste matchs (infinite scroll ou bouton "charger plus")
+  - Liste joueurs
+  - Historique matchs dans stats
+  - Messages chat (scroll infini vers le haut)
+- [ ] **Peer feedback post-match**
+  - UI notation joueur apres completion match (1-5 etoiles)
+  - Integration dans le calcul ELO (30% du score)
+  - Historique des feedbacks recus dans le profil
 
-Schéma complet dans `supabase/schema.sql`
+### PHASE 6 — Clubs & Terrains (2-3 semaines)
+> Attirer les clubs comme utilisateurs de la plateforme.
 
-## Algorithme de Matching
-Score composite sur 100 points :
-- **Niveau** (40%) : diff de level_score, 0 = parfait
-- **Position complémentaire** (20%) : gauche + droite = bonus max
-- **Fiabilité** (20%) : reliability_score, pénalise no-shows
-- **Proximité** (15%) : distance haversine, décroît linéairement
-- **Disponibilités** (5%) : créneaux communs
+- [ ] **Pages clubs**
+  - `/clubs` : annuaire avec recherche par ville, nom, rating
+  - `/clubs/[id]` : detail club (infos, terrains, horaires, avis)
+  - Photos club (Supabase Storage)
+  - Lien depuis la carte Mapbox vers page club
+- [ ] **Systeme d'avis**
+  - Formulaire d'avis apres visite (note 1-5, commentaire)
+  - Affichage moyenne + liste avis sur page club
+  - Moderation basique (signalement)
+- [ ] **Reservation de terrains**
+  - Grille de disponibilite par terrain (creneaux horaires)
+  - Flow de reservation : choisir creneau -> payer (Stripe) -> confirmation
+  - Gestion annulation (politique remboursement)
+  - Dashboard club : voir les reservations, bloquer des creneaux
+  - Table `bookings` deja en base (schema pret)
+- [ ] **Dashboard club (base)**
+  - Vue reservations du jour/semaine
+  - Stats basiques (taux remplissage, revenus)
 
-## Évolution du Niveau
-Système hybride Elo-like :
-- Auto-déclaration initiale (onboarding)
-- Ajustement post-match selon résultat + force adversaire
-- Peer feedback (30% du calcul) après chaque match
-- Score de 1.0 à 10.0, facteur K = 0.5
+### PHASE 7 — Tournois & Competition (2-3 semaines)
+> Ajouter la dimension competitive pour fideliser les joueurs.
 
-## Roadmap (12 sprints × 1 semaine)
-**Phase 1 — Fondations** (S1-S3) : Auth, profils, onboarding, matching, recherche joueurs
-**Phase 2 — Core Match** (S4-S6) : CRUD matchs, résultats, stats, classements
-**Phase 3 — Social & Carte** (S7-S9) : Chat realtime, groupes, carte Mapbox
-**Phase 4 — Monétisation** (S10-S12) : Stripe, notifications push, PWA polish, déploiement
+- [ ] **Schema tournois**
+  - Nouvelle table `tournaments` (nom, type, format, dates, club, max_teams)
+  - Table `tournament_teams` (equipes inscrites)
+  - Table `tournament_brackets` (arbre de competition)
+  - Migration Supabase + RLS
+- [ ] **CRUD tournois**
+  - `/tournois` : liste des tournois (a venir, en cours, passes)
+  - `/tournois/creer` : formulaire creation (club organise ou libre)
+  - `/tournois/[id]` : detail avec bracket, equipes, resultats
+- [ ] **Gestion brackets**
+  - Tirage au sort automatique
+  - Arbre eliminatoire (visualisation bracket)
+  - Saisie des scores par match
+  - Avancement automatique du vainqueur
+- [ ] **Inscriptions**
+  - Inscription en equipe de 2 (duo)
+  - Paiement inscription (Stripe)
+  - Liste d'attente si complet
+  - Notifications aux participants (prochains matchs, resultats)
 
-## Variables d'Environnement Requises
-```
-NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
-NEXT_PUBLIC_MAPBOX_TOKEN
-NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
-RESEND_API_KEY
-NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
-```
+### PHASE 8 — Engagement & Retention (2 semaines)
+> Maximiser l'utilisation recurrente de l'app.
 
-## Modèle Économique
-- **Gratuit** : profil, matching basique, 3 matchs/mois, chat
-- **Premium** (5,99€/mois ou 49,99€/an) : matching illimité, stats avancées, classements
-- **Club** (sur devis) : dashboard, gestion terrains, tournois, analytics
+- [ ] **Notifications intelligentes**
+  - "Un joueur compatible est disponible ce soir" (push smart)
+  - "Tu n'as pas joue depuis 7 jours" (reactivation)
+  - Resume hebdomadaire par email (stats, matchs a venir)
+  - Digest groupe (nouveaux matchs dans tes groupes)
+- [ ] **Gamification**
+  - Badges/achievements (premier match, 10 victoires, streak 5 matchs...)
+  - Animation d'obtention de badge
+  - Section badges dans le profil
+  - Classement mensuel avec reset
+- [ ] **Ameliorations chat**
+  - Partage d'images (Supabase Storage)
+  - Reactions sur messages (emoji)
+  - Indicateur "en train d'ecrire" (Supabase Presence)
+  - Chat de groupe depuis page groupe
+- [ ] **Page offline**
+  - Fallback PWA quand hors connexion
+  - Cache des dernieres donnees consultees
+
+### PHASE 9 — Distribution & Croissance (2-3 semaines)
+> Rendre l'app accessible au plus grand nombre.
+
+- [ ] **Stores mobiles**
+  - Wrapper PWA avec Capacitor ou Bubblewrap
+  - Listing Google Play Store
+  - Listing Apple App Store (TestFlight puis production)
+  - Deep links (partager un match, un profil)
+- [ ] **SEO & Landing**
+  - Landing page publique (hors auth) avec features
+  - Pages joueurs publiques (profil partage)
+  - Open Graph meta pour partage social
+  - Sitemap + robots.txt
+- [ ] **Analytics & Monitoring**
+  - Vercel Analytics (Core Web Vitals)
+  - Sentry pour error tracking
+  - Mixpanel ou PostHog pour analytics produit
+  - Dashboard metriques (DAU, retention, matchs/jour)
+- [ ] **Internationalisation (i18n)**
+  - Support anglais + espagnol (marches padel majeurs)
+  - next-intl ou format messages
+  - Switcheur de langue dans parametres
+
+### PHASE 10 — Scale & Monetisation avancee (ongoing)
+> Transformer en business viable.
+
+- [ ] **Stripe Connect pour clubs**
+  - Clubs recoivent les paiements directement
+  - Commission plateforme sur reservations
+  - Dashboard financier club
+- [ ] **Offre Club avancee**
+  - Gestion multi-terrains
+  - Calendrier planning
+  - CRM joueurs (frequentation, preferences)
+  - Analytics avancees (heures de pointe, sports populaires)
+- [ ] **API publique**
+  - REST API pour clubs tiers
+  - Webhooks pour integration calendrier
+  - Widget reservation embedable
+- [ ] **Optimisations performance**
+  - Edge functions pour les calculs lourds
+  - CDN images (Cloudflare)
+  - Database read replicas si necessaire
+  - Rate limiting API
+
+---
+
+## Priorites immediates (prochaine session)
+1. Notifications auto-triggers (rappels, invitations, nouveaux messages)
+2. Tests Vitest sur les fonctions critiques (matching, ELO, reliability)
+3. Pagination sur les listes longues

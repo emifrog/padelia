@@ -4,6 +4,8 @@
 
 Padelia est une Progressive Web App (PWA) mobile-first pour les joueurs de padel. Matching intelligent, gestion de matchs, chat en temps reel, groupes, carte interactive et suivi de progression.
 
+> **Live** : [padelia-beta.vercel.app](https://padelia-beta.vercel.app)
+
 ---
 
 ## Fonctionnalites
@@ -13,6 +15,7 @@ Padelia est une Progressive Web App (PWA) mobile-first pour les joueurs de padel
 - Onboarding en 3 etapes (identite, niveau, style de jeu)
 - Profil complet : niveau, cote main, style, objectifs, disponibilites
 - Edition de profil et gestion des creneaux horaires
+- Geolocalisation avec sauvegarde dans le profil
 
 ### Matching Intelligent
 Score composite sur 100 points :
@@ -26,7 +29,8 @@ Score composite sur 100 points :
 - Creation de match (amical, classe, tournoi)
 - Visibilite (public, groupe, prive)
 - Inscription / desinscription des joueurs
-- Saisie des scores et finalisation
+- Saisie des scores (jusqu'a 3 sets) et finalisation
+- Calcul ELO automatique post-match
 - Filtres par type avec recherche texte
 
 ### Systeme de Classement
@@ -65,7 +69,7 @@ Score composite sur 100 points :
 
 ### Notifications Push
 - Web Push API avec cles VAPID
-- Notifications pour invitations, rappels, messages
+- Service Worker pour reception en arriere-plan
 - Emails transactionnels via Resend
 
 ### PWA
@@ -79,7 +83,7 @@ Score composite sur 100 points :
 
 | Categorie | Technologie |
 |-----------|------------|
-| Framework | Next.js 16 (App Router) + React 19 + TypeScript 5 |
+| Framework | Next.js 15 (App Router) + React 19 + TypeScript 5.6+ |
 | Backend | Supabase (Auth, PostgreSQL, Realtime, Storage) |
 | UI | Tailwind CSS 4 + shadcn/ui + Framer Motion |
 | State | TanStack Query (serveur) + Zustand (client) |
@@ -90,59 +94,6 @@ Score composite sur 100 points :
 | Notifications | Web Push API + Resend (emails) |
 | PWA | Service Worker custom + Serwist |
 | Deploy | Vercel |
-
----
-
-## Structure du Projet
-
-```
-src/
-├── app/
-│   ├── (auth)/              # Login, register, onboarding
-│   │   ├── login/
-│   │   ├── register/
-│   │   └── onboarding/
-│   ├── (main)/              # Layout principal avec bottom nav
-│   │   ├── accueil/         # Feed personnalise
-│   │   ├── matchs/          # CRUD matchs + recherche + detail
-│   │   ├── carte/           # Carte Mapbox interactive
-│   │   ├── joueurs/         # Recherche joueurs
-│   │   ├── chat/            # Conversations + messages
-│   │   ├── groupes/         # Communautes
-│   │   ├── stats/           # Dashboard + classements
-│   │   └── profil/          # Profil, edit, dispos, abonnement
-│   └── api/
-│       ├── matches/         # Completion de match
-│       ├── notifications/   # Push subscribe + send
-│       ├── stripe/          # Checkout + portal
-│       └── webhooks/        # Stripe webhooks
-├── components/
-│   ├── ui/                  # shadcn/ui (Button, Input, Badge, etc.)
-│   ├── match/               # MatchCard, MatchForm, MatchActions
-│   ├── player/              # PlayerSuggestionCard
-│   ├── chat/                # ChatWindow, MessageBubble, ChatInput
-│   ├── group/               # GroupCard, GroupActions, GroupMemberList
-│   ├── map/                 # MapView, MapWrapper
-│   ├── stats/               # LevelProgressBar, WinRateRing
-│   ├── accueil/             # SuggestionsSection, FabButton
-│   ├── onboarding/          # StepIdentity, StepLevel, StepStyle
-│   └── layout/              # Header, BottomNav, LogoutButton
-├── hooks/
-│   ├── use-chat-realtime.ts
-│   ├── use-player-suggestions.ts
-│   └── use-group-actions.ts
-├── lib/
-│   ├── supabase/            # Clients (browser, server, middleware)
-│   ├── stripe/              # Config Stripe + plans
-│   ├── matching/            # Algorithme de matching
-│   ├── ranking/             # Systeme ELO + fiabilite
-│   ├── notifications/       # Push + email
-│   ├── validations/         # Schemas Zod (match, group)
-│   ├── constants/           # Labels et couleurs
-│   └── utils.ts             # cn() helper
-├── types/                   # TypeScript types + enums
-└── stores/                  # Zustand stores
-```
 
 ---
 
@@ -159,51 +110,18 @@ src/
 ### Installation
 
 ```bash
-# Cloner le repo
-git clone https://github.com/votre-user/padelia.git
+git clone https://github.com/emifrog/padelia.git
 cd padelia
-
-# Installer les dependances
 npm install
 ```
 
 ### Configuration
 
-Copier le fichier d'exemple et renseigner les variables :
-
 ```bash
 cp .env.local.example .env.local
 ```
 
-Variables requises dans `.env.local` :
-
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=Padelia
-
-# Stripe
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_PRICE_PREMIUM_MONTHLY=price_...
-STRIPE_PRICE_PREMIUM_YEARLY=price_...
-
-# Mapbox
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ...
-
-# Web Push (VAPID)
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=your-vapid-public-key
-VAPID_PRIVATE_KEY=your-vapid-private-key
-
-# Resend (emails)
-RESEND_API_KEY=re_...
-```
+Renseigner les variables dans `.env.local` (voir `.env.local.example` pour la liste complete).
 
 ### Base de Donnees
 
@@ -214,83 +132,19 @@ Executer le schema SQL dans votre projet Supabase :
 supabase db push
 
 # Ou manuellement via le SQL Editor de Supabase
-# Copier le contenu de schema.sql
+# Copier le contenu de supabase/schema.sql
 ```
-
-Le schema cree 14+ tables avec RLS, triggers et fonctions (haversine_distance, find_nearby_players).
 
 ### Lancement
 
 ```bash
-# Developpement
-npm run dev
-
-# Build production
-npm run build
-
-# Demarrer en production
-npm start
+npm run dev       # Developpement (Turbopack)
+npm run build     # Build production
+npm start         # Serveur production
+npm run lint      # ESLint
 ```
 
 L'application est accessible sur `http://localhost:3000`.
-
----
-
-## Base de Donnees
-
-### Tables Principales
-
-| Table | Description |
-|-------|------------|
-| `profiles` | Joueurs (niveau, stats, geo, disponibilites) |
-| `matches` | Matchs (type, statut, lieu, date, scores) |
-| `match_participants` | Inscriptions + statuts (confirmed, invited, left) |
-| `conversations` | Conversations (direct, group, match) |
-| `messages` | Messages chat |
-| `conversation_members` | Membres + last_read_at |
-| `groups` | Groupes/communautes |
-| `group_members` | Membres de groupe + roles |
-| `clubs` | Clubs de padel |
-| `courts` | Terrains par club |
-| `bookings` | Reservations de terrains |
-| `notifications` | Notifications in-app |
-| `player_stats` | Stats detaillees par joueur |
-| `club_reviews` | Avis sur les clubs |
-
-### Enums
-
-- `player_level` : debutant, intermediaire_moins, intermediaire, intermediaire_plus, avance, expert
-- `match_status` : open, full, confirmed, in_progress, completed, cancelled
-- `match_type` : friendly, ranked, tournament
-- `participant_status` : invited, confirmed, declined, left, no_show
-
----
-
-## Design System
-
-L'interface suit un design mobile-first avec :
-
-- **Font** : Outfit (300-900)
-- **Couleurs** : Navy (#0B1A2E), Green (#3EAF4B), Lime (#C8DC38)
-- **Gradients** : Navy (135deg), Green (135deg), Lime-Yellow (135deg)
-- **Shadows** : padel (light), padel-md (medium), green (glow)
-- **Cards** : Blanches avec shadow-padel, arrondies (rounded-xl)
-- **Matchs hero** : Cards navy gradient avec scroll horizontal
-- **Badges** : Rounded-full avec couleurs semantiques
-- **Profil** : Hero card navy gradient, stats 4 colonnes
-- **Chat** : Bulles vertes gradient (propres) / grises (recues)
-- **FAB** : Bouton flottant vert gradient avec pulse animation
-
----
-
-## Scripts
-
-| Commande | Description |
-|----------|------------|
-| `npm run dev` | Serveur de developpement (Turbopack) |
-| `npm run build` | Build de production |
-| `npm start` | Serveur de production |
-| `npm run lint` | Linting ESLint |
 
 ---
 
@@ -305,8 +159,17 @@ Le projet utilise Next.js App Router avec deux groupes de routes :
 ### Server vs Client Components
 
 - **Server Components** par defaut pour le SSR et le data fetching
-- **Client Components** (`'use client'`) uniquement pour l'interactivite (formulaires, realtime, state)
-- `dynamic(() => import(...), { ssr: false })` pour Mapbox (pas de SSR)
+- **Client Components** (`'use client'`) pour l'interactivite (formulaires, realtime, state)
+- `dynamic(() => import(...), { ssr: false })` pour Mapbox
+
+### Performance
+
+- Requetes Supabase avec joins (pas de N+1)
+- `Promise.all()` pour les requetes paralleles
+- TanStack Query avec `staleTime: 5min` pour le cache client
+- `React.memo` sur les composants de liste (MatchCard, PlayerSuggestionCard, BottomNav)
+- `Suspense` boundaries pour le rendu progressif
+- Font `display: 'swap'` pour eviter le FOIT
 
 ### Securite
 
@@ -315,6 +178,41 @@ Le projet utilise Next.js App Router avec deux groupes de routes :
 - Validation Zod sur tous les formulaires
 - Verification de signature Stripe pour les webhooks
 - Service Role Key uniquement cote serveur
+
+---
+
+## Base de Donnees
+
+### Tables Principales
+
+| Table | Description |
+|-------|------------|
+| `profiles` | Joueurs (niveau, stats, geo, disponibilites) |
+| `matches` | Matchs (type, statut, lieu, date, scores) |
+| `match_participants` | Inscriptions + statuts |
+| `conversations` | Conversations (direct, group, match) |
+| `messages` | Messages chat |
+| `conversation_members` | Membres + last_read_at |
+| `groups` | Groupes/communautes |
+| `group_members` | Membres de groupe + roles |
+| `clubs` | Clubs de padel |
+| `courts` | Terrains par club |
+| `bookings` | Reservations de terrains |
+| `notifications` | Notifications in-app |
+| `player_stats` | Stats detaillees par joueur |
+| `club_reviews` | Avis sur les clubs |
+
+---
+
+## Design System
+
+- **Font** : Outfit (300-900, display swap)
+- **Couleurs** : Navy (#0B1A2E), Green (#3EAF4B), Lime (#C8DC38)
+- **Gradients** : Navy (135deg), Green (135deg)
+- **Cards** : Blanches avec shadow-padel, rounded-xl
+- **Matchs hero** : Cards navy gradient, scroll horizontal
+- **Chat** : Bulles vertes gradient (propres) / grises (recues)
+- **FAB** : Bouton flottant vert gradient avec pulse animation
 
 ---
 
@@ -330,11 +228,19 @@ Le projet utilise Next.js App Router avec deux groupes de routes :
 
 ## Roadmap
 
-- [x] **Phase 1** (S1-S3) : Auth, profils, onboarding, matching, recherche joueurs
-- [x] **Phase 2** (S4-S6) : CRUD matchs, resultats, ELO, stats, classements
-- [x] **Phase 3** (S7-S9) : Chat realtime, groupes, carte Mapbox
-- [x] **Phase 4** (S10-S12) : Stripe, notifications push, PWA, design polish
-- [ ] **Futur** : Page clubs dedicee, tournois, analytics club, Stripe Connect
+### Fait
+- [x] **Phase 1** : Auth, profils, onboarding, matching, recherche joueurs
+- [x] **Phase 2** : CRUD matchs, resultats, ELO, stats, classements
+- [x] **Phase 3** : Chat realtime, groupes, carte Mapbox
+- [x] **Phase 4** : Stripe, notifications push, PWA, design polish
+
+### A venir
+- [ ] **Phase 5 — Solidification** : Notifications auto-triggers, tests (Vitest + Playwright), pagination, peer feedback post-match
+- [ ] **Phase 6 — Clubs & Terrains** : Pages clubs, avis, reservation de terrains, dashboard club
+- [ ] **Phase 7 — Tournois** : Schema, CRUD, brackets, inscriptions
+- [ ] **Phase 8 — Engagement** : Gamification (badges), ameliorations chat (images, reactions, presence), notifications intelligentes
+- [ ] **Phase 9 — Distribution** : Stores mobiles (Capacitor), SEO, analytics, i18n
+- [ ] **Phase 10 — Scale** : Stripe Connect, offre club avancee, API publique
 
 ---
 
