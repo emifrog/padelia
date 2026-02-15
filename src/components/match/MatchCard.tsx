@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import { MATCH_TYPE_LABELS, MATCH_STATUS_LABELS } from '@/lib/constants/match';
 import type { MatchType, MatchStatus } from '@/types';
@@ -29,7 +30,7 @@ const TYPE_BADGE_COLORS: Record<string, string> = {
   tournament: 'bg-purple-500/15 text-purple-600',
 };
 
-export default function MatchCard({ match }: Props) {
+export default memo(function MatchCard({ match }: Props) {
   const date = new Date(match.scheduled_at);
   const isUpcoming = date > new Date();
   const playerCount = match.participant_count ?? 0;
@@ -112,4 +113,4 @@ export default function MatchCard({ match }: Props) {
       )}
     </Link>
   );
-}
+});

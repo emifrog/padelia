@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { LEVEL_LABELS, SIDE_LABELS, STYLE_LABELS } from '@/types';
 import type { PlayerLevel, PlayingSide, PlayStyle } from '@/types';
 import type { SuggestedPlayer } from '@/hooks/use-player-suggestions';
@@ -24,7 +25,7 @@ function ScoreBar({ value, max = 100 }: { value: number; max?: number }) {
   );
 }
 
-export default function PlayerSuggestionCard({ suggestion, onPress }: Props) {
+export default memo(function PlayerSuggestionCard({ suggestion, onPress }: Props) {
   const { profile, score } = suggestion;
   const { breakdown } = score;
 
@@ -117,4 +118,4 @@ export default function PlayerSuggestionCard({ suggestion, onPress }: Props) {
       </div>
     </button>
   );
-}
+});

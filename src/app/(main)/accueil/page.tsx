@@ -1,8 +1,9 @@
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { MatchStatus, MatchType } from '@/types';
-import { Clock, MapPin, ChevronRight, Users } from 'lucide-react';
+import { Clock, MapPin, ChevronRight, Users, Loader2 } from 'lucide-react';
 import SuggestionsSection from '@/components/accueil/SuggestionsSection';
 import FabButton from '@/components/accueil/FabButton';
 
@@ -52,27 +53,39 @@ export default async function AccueilPage() {
 
   if (!profile) redirect('/onboarding');
 
-  // Fetch upcoming matches (user's matches)
-  const { data: upcomingMatches } = await supabase
-    .from('match_participants')
-    .select(`
-      match_id,
-      status,
-      matches (
-        id,
-        title,
-        scheduled_at,
-        location_name,
+  // Run all 3 independent queries in parallel
+  const [
+    { data: upcomingMatches },
+    { data: openMatches },
+    { data: myGroups },
+  ] = await Promise.all([
+    supabase
+      .from('match_participants')
+      .select(`
+        match_id,
         status,
-        max_players,
-        match_type,
-        match_participants (player_id)
-      )
-    `)
-    .eq('player_id', user.id)
-    .in('status', ['confirmed', 'invited'])
-    .order('created_at', { ascending: false })
-    .limit(5);
+        matches (
+          id, title, scheduled_at, location_name, status,
+          max_players, match_type,
+          match_participants (player_id)
+        )
+      `)
+      .eq('player_id', user.id)
+      .in('status', ['confirmed', 'invited'])
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('matches')
+      .select('id, title, scheduled_at, location_name, status, max_players, match_type, cost_per_player, match_participants (player_id)')
+      .eq('status', 'open')
+      .order('scheduled_at', { ascending: true })
+      .limit(5),
+    supabase
+      .from('group_members')
+      .select('group_id, groups (id, name, city, member_count)')
+      .eq('user_id', user.id)
+      .limit(4),
+  ]);
 
   const myMatches = (upcomingMatches ?? []).filter((mp: ParticipantWithMatch) => {
     const match = Array.isArray(mp.matches) ? mp.matches[0] : mp.matches;
@@ -81,24 +94,6 @@ export default async function AccueilPage() {
     ...mp,
     matches: Array.isArray(mp.matches) ? mp.matches[0] : mp.matches,
   }));
-
-  // Fetch open matches nearby
-  const { data: openMatches } = await supabase
-    .from('matches')
-    .select('id, title, scheduled_at, location_name, status, max_players, match_type, cost_per_player, match_participants (player_id)')
-    .eq('status', 'open')
-    .order('scheduled_at', { ascending: true })
-    .limit(5);
-
-  // Fetch user's groups
-  const { data: myGroups } = await supabase
-    .from('group_members')
-    .select(`
-      group_id,
-      groups (id, name, city, member_count)
-    `)
-    .eq('user_id', user.id)
-    .limit(4);
 
   const groups = (myGroups ?? []).map((gm: { group_id: string; groups: GroupData | GroupData[] }) => {
     return Array.isArray(gm.groups) ? gm.groups[0] : gm.groups;
@@ -272,7 +267,13 @@ export default async function AccueilPage() {
         <h2 className="mb-3 text-[17px] font-bold text-navy">
           <span className="mr-1.5">⚡</span>Joueurs compatibles
         </h2>
-        <SuggestionsSection />
+        <Suspense fallback={
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        }>
+          <SuggestionsSection />
+        </Suspense>
       </section>
 
       {/* ── Mes groupes ── */}

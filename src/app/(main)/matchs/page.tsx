@@ -12,7 +12,7 @@ export default async function MatchsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Fetch open and upcoming matches
+  // Fetch matches with participants in a single query (avoids N+1)
   const { data: matches } = await supabase
     .from('matches')
     .select(`
@@ -26,25 +26,20 @@ export default async function MatchsPage() {
       max_players,
       cost_per_player,
       organizer_id,
-      profiles!matches_organizer_id_fkey (
-        full_name
-      )
+      profiles!matches_organizer_id_fkey ( full_name ),
+      match_participants ( id, status )
     `)
     .in('status', ['open', 'full', 'confirmed', 'in_progress'])
     .gte('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true })
     .limit(50);
 
-  // Count participants for each match
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const matchesWithCounts = await Promise.all((matches ?? []).map(async (m: any) => {
-    const { count } = await supabase
-      .from('match_participants')
-      .select('id', { count: 'exact', head: true })
-      .eq('match_id', m.id)
-      .in('status', ['confirmed', 'invited']);
-
+  const matchesWithCounts = (matches ?? []).map((m: any) => {
     const organizer = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+    const participants = (m.match_participants ?? []).filter(
+      (p: { status: string }) => p.status === 'confirmed' || p.status === 'invited',
+    );
     return {
       id: m.id,
       title: m.title,
@@ -55,10 +50,10 @@ export default async function MatchsPage() {
       location_name: m.location_name,
       max_players: m.max_players,
       cost_per_player: m.cost_per_player,
-      participant_count: count ?? 0,
+      participant_count: participants.length,
       organizer_name: organizer?.full_name ?? null,
     };
-  }));
+  });
 
   return (
     <div className="space-y-4">

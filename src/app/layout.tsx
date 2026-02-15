@@ -3,12 +3,14 @@ import { Outfit } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import ServiceWorkerRegister from '@/components/layout/ServiceWorkerRegister';
 import InstallPrompt from '@/components/layout/InstallPrompt';
+import QueryProvider from '@/components/providers/QueryProvider';
 import './globals.css';
 
 const outfit = Outfit({
   variable: '--font-outfit',
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700', '800', '900'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -44,7 +46,9 @@ export default function RootLayout({
         className={`${outfit.variable} antialiased`}
         style={{ fontFamily: 'var(--font-outfit), system-ui, sans-serif' }}
       >
-        {children}
+        <QueryProvider>
+          {children}
+        </QueryProvider>
         <Toaster position="top-center" richColors />
         <ServiceWorkerRegister />
         <InstallPrompt />

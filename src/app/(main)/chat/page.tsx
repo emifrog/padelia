@@ -11,7 +11,7 @@ export default async function ChatPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Fetch conversations the user is a member of
+  // Fetch conversations with all members in a single query (avoids N+1)
   const { data: memberships } = await supabase
     .from('conversation_members')
     .select(`
@@ -23,15 +23,19 @@ export default async function ChatPage() {
         type,
         name,
         last_message_at,
-        last_message_preview
+        last_message_preview,
+        conversation_members (
+          user_id,
+          profiles ( full_name, username )
+        )
       )
     `)
     .eq('user_id', user.id)
     .order('conversation_id', { ascending: false });
 
-  // Build conversation list with other member info for direct chats
+  // Build conversation list — no extra queries needed
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const conversations = await Promise.all((memberships ?? []).map(async (m: any) => {
+  const conversations = (memberships ?? []).map((m: any) => {
     const conv = Array.isArray(m.conversations) ? m.conversations[0] : m.conversations;
     if (!conv) return null;
 
@@ -39,22 +43,15 @@ export default async function ChatPage() {
     let avatarInitial = '?';
     const isGroup = conv.type === 'group';
 
-    // For direct chats, get the other member's name
+    // For direct chats, find the other member's name from pre-loaded data
     if (conv.type === 'direct' && !conv.name) {
-      const { data: otherMembers } = await supabase
-        .from('conversation_members')
-        .select('user_id, profiles (full_name, username)')
-        .eq('conversation_id', conv.id)
-        .neq('user_id', user.id)
-        .limit(1);
-
-      if (otherMembers && otherMembers.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const profile = Array.isArray((otherMembers[0] as any).profiles)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ? (otherMembers[0] as any).profiles[0]
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          : (otherMembers[0] as any).profiles;
+      const otherMember = (conv.conversation_members ?? []).find(
+        (cm: { user_id: string }) => cm.user_id !== user.id,
+      );
+      if (otherMember) {
+        const profile = Array.isArray(otherMember.profiles)
+          ? otherMember.profiles[0]
+          : otherMember.profiles;
         displayName = profile?.full_name ?? 'Joueur';
         avatarInitial = (profile?.full_name ?? '?').charAt(0).toUpperCase();
       }
@@ -78,7 +75,7 @@ export default async function ChatPage() {
       hasUnread,
       isMuted: m.is_muted,
     };
-  }));
+  });
 
   const validConversations = conversations
     .filter(Boolean)

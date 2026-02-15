@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Swords, Users, BarChart3, User } from 'lucide-react';
@@ -12,7 +13,7 @@ const NAV_ITEMS = [
   { href: '/profil', label: 'Profil', icon: User },
 ] as const;
 
-export default function BottomNav() {
+export default memo(function BottomNav() {
   const pathname = usePathname();
 
   return (
@@ -51,4 +52,4 @@ export default function BottomNav() {
       </div>
     </nav>
   );
-}
+});
