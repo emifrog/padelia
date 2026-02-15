@@ -1,12 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, X } from 'lucide-react';
 
-interface BeforeInstallPromptEvent extends Event {
+export interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+// Global ref so the settings page can trigger install too
+let deferredPromptGlobal: BeforeInstallPromptEvent | null = null;
+
+export function getDeferredPrompt(): BeforeInstallPromptEvent | null {
+  return deferredPromptGlobal;
+}
+
+export function clearDeferredPrompt() {
+  deferredPromptGlobal = null;
+}
+
+export function isStandalone(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    ('standalone' in window.navigator && (window.navigator as unknown as { standalone: boolean }).standalone === true)
+  );
 }
 
 export default function InstallPrompt() {
@@ -14,30 +33,59 @@ export default function InstallPrompt() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Don't show if already installed or dismissed
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    // If running in standalone mode, clear any old dismiss flag (app is installed)
+    if (isStandalone()) {
+      localStorage.setItem('pwa_installed', '1');
+      return;
+    }
+
+    // If app was previously installed but now we're in browser mode = uninstalled
+    const wasInstalled = localStorage.getItem('pwa_installed');
+    if (wasInstalled) {
+      // Clear the installed + dismissed flags so banner can show again
+      localStorage.removeItem('pwa_installed');
+      localStorage.removeItem('pwa_install_dismissed');
+    }
+
+    // Check if user has dismissed the banner (and app was never installed)
     const wasDismissed = localStorage.getItem('pwa_install_dismissed');
     if (wasDismissed) return;
 
     function handler(e: Event) {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const prompt = e as BeforeInstallPromptEvent;
+      deferredPromptGlobal = prompt;
+      setDeferredPrompt(prompt);
       setShow(true);
     }
 
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+
+    // Listen for successful install
+    window.addEventListener('appinstalled', () => {
+      setShow(false);
+      setDeferredPrompt(null);
+      deferredPromptGlobal = null;
+      localStorage.setItem('pwa_installed', '1');
+      localStorage.removeItem('pwa_install_dismissed');
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
   }, []);
 
-  async function handleInstall() {
+  const handleInstall = useCallback(async () => {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
       setShow(false);
+      localStorage.setItem('pwa_installed', '1');
     }
     setDeferredPrompt(null);
-  }
+    deferredPromptGlobal = null;
+  }, [deferredPrompt]);
 
   function dismiss() {
     setShow(false);

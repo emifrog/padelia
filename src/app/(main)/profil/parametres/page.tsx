@@ -1,20 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Globe, Lock, Moon, Shield, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Globe, Lock, Moon, Shield, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import LogoutButton from '@/components/layout/LogoutButton';
+import { getDeferredPrompt, clearDeferredPrompt, isStandalone, type BeforeInstallPromptEvent } from '@/components/layout/InstallPrompt';
 
 export default function ParametresPage() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installed, setInstalled] = useState(true);
   const supabase = createClient();
   const router = useRouter();
+
+  useEffect(() => {
+    setInstalled(isStandalone());
+    setInstallPrompt(getDeferredPrompt());
+
+    // Listen for new beforeinstallprompt in case it fires while on this page
+    function handler(e: Event) {
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    }
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  async function handleInstallApp() {
+    const prompt = installPrompt || getDeferredPrompt();
+    if (!prompt) {
+      toast.info('Utilise le menu de ton navigateur pour installer l\'application');
+      return;
+    }
+    await prompt.prompt();
+    const { outcome } = await prompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstalled(true);
+      toast.success('Application installee !');
+    }
+    setInstallPrompt(null);
+    clearDeferredPrompt();
+  }
 
   async function handleChangePassword() {
     setChangingPassword(true);
@@ -140,6 +171,40 @@ export default function ParametresPage() {
             <span className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-white shadow" />
           </div>
         </div>
+      </div>
+
+      {/* Application section */}
+      <div className="space-y-1">
+        <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-gray-400">
+          Application
+        </h2>
+
+        {!installed ? (
+          <button
+            type="button"
+            onClick={handleInstallApp}
+            className="flex w-full items-center justify-between rounded-xl bg-white p-4 shadow-padel transition-colors active:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <Download className="h-4 w-4 text-primary" />
+              <div>
+                <span className="text-[14px] text-gray-600">Installer Padelia</span>
+                <p className="text-[11px] text-gray-400">Ajouter a l&apos;ecran d&apos;accueil</p>
+              </div>
+            </div>
+          </button>
+        ) : (
+          <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-padel">
+            <div className="flex items-center gap-3">
+              <Download className="h-4 w-4 text-green-500" />
+              <div>
+                <span className="text-[14px] text-gray-600">Application installee</span>
+                <p className="text-[11px] text-gray-400">Padelia est sur ton ecran d&apos;accueil</p>
+              </div>
+            </div>
+            <span className="text-[11px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Actif</span>
+          </div>
+        )}
       </div>
 
       {/* Danger zone */}
