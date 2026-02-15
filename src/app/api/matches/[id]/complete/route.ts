@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { calculateEloChanges, type EloPlayer, type MatchResult } from '@/lib/ranking';
 import { calculateReliability } from '@/lib/ranking';
+import { triggerMatchCompleted } from '@/lib/notifications/triggers';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -151,6 +152,11 @@ export async function POST(_request: Request, context: RouteContext) {
       level_change: result.change,
     });
   }
+
+  // 7. Notify all participants that match is completed
+  triggerMatchCompleted(matchId).catch((err) => {
+    console.error('[match/complete] Notification error:', err);
+  });
 
   return NextResponse.json({
     success: true,

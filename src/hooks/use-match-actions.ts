@@ -71,6 +71,14 @@ export function useMatchActions() {
       }
 
       toast.success('Tu as rejoint le match !');
+
+      // Fire-and-forget: notify organizer
+      fetch('/api/notifications/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'match_join', data: { match_id: matchId } }),
+      }).catch(() => {});
+
       return true;
     } finally {
       setLoading(false);
@@ -117,6 +125,14 @@ export function useMatchActions() {
         .eq('status', 'full');
 
       toast.success('Tu as quitté le match');
+
+      // Fire-and-forget: notify organizer
+      fetch('/api/notifications/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'match_leave', data: { match_id: matchId } }),
+      }).catch(() => {});
+
       return true;
     } finally {
       setLoading(false);
@@ -139,6 +155,14 @@ export function useMatchActions() {
       if (error) { toast.error('Erreur'); return false; }
 
       toast.success('Match annulé');
+
+      // Fire-and-forget: notify all participants
+      fetch('/api/notifications/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'match_cancelled', data: { match_id: matchId } }),
+      }).catch(() => {});
+
       return true;
     } finally {
       setLoading(false);

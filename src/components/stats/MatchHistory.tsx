@@ -1,5 +1,12 @@
+'use client';
+
+import { useState, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+
+const PAGE_SIZE = 10;
 
 interface PlayerStat {
   id: string;
@@ -17,7 +24,43 @@ interface Props {
   stats: PlayerStat[];
 }
 
-export default function MatchHistory({ stats }: Props) {
+export default function MatchHistory({ stats: initialStats }: Props) {
+  const [stats, setStats] = useState<PlayerStat[]>(initialStats);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialStats.length >= PAGE_SIZE);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+
+    try {
+      const supabase = createClient();
+      const lastStat = stats[stats.length - 1];
+      if (!lastStat) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('player_stats')
+        .select('*')
+        .eq('player_id', user.id)
+        .lt('created_at', lastStat.created_at)
+        .order('created_at', { ascending: false })
+        .limit(PAGE_SIZE);
+
+      if (!data || data.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setStats((prev) => [...prev, ...data]);
+      if (data.length < PAGE_SIZE) setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [stats, loadingMore, hasMore]);
+
   if (stats.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -68,6 +111,20 @@ export default function MatchHistory({ stats }: Props) {
           </div>
         );
       })}
+
+      {hasMore && (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={loadMore}
+          disabled={loadingMore}
+        >
+          {loadingMore ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : null}
+          Charger plus
+        </Button>
+      )}
     </div>
   );
 }

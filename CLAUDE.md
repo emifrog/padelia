@@ -103,6 +103,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 NEXT_PUBLIC_MAPBOX_TOKEN
 NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
 RESEND_API_KEY
+CRON_SECRET
 NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 ```
 
@@ -123,7 +124,7 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 | Profil (vue/edition/parametres) | FAIT | Tous champs, validation Zod, avatar |
 | Match CRUD | FAIT | Creer, lister, detail, rejoindre/quitter |
 | Scoring post-match | FAIT | 3 sets, calcul vainqueur, ELO |
-| Chat temps reel | FAIT | Supabase Realtime, envoi/reception, mark read |
+| Chat temps reel | FAIT | Supabase Realtime, envoi/reception, mark read, pagination scroll infini |
 | Recherche joueurs + matching | FAIT | Filtre niveau/distance, algo composite 5 criteres |
 | Groupes/communautes | FAIT | CRUD, membres, admin, matchs de groupe |
 | Carte Mapbox | FAIT | Clubs + joueurs, geolocalisation, layers |
@@ -131,25 +132,27 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 | Paiements Stripe | FAIT | Checkout, webhooks, abonnement premium |
 | PWA | FAIT | Service Worker, manifest, install prompt |
 | Geolocalisation | FAIT | Permission prompt, sauvegarde coords profil |
+| Notifications auto-triggers | FAIT | Join/leave/cancel match, groupe, chat (debounce 30s), match completed |
+| Notifications email | FAIT | Templates Resend (bienvenue, match termine), lazy-init |
+| Rappel match (cron) | FAIT | Vercel Cron /15min, push + email 75min avant |
+| Tests unitaires (Vitest) | FAIT | 105 tests : matching, ELO, reliability, Zod schemas |
+| Pagination "Charger plus" | FAIT | Matchs, joueurs, stats, chat (cursor-based) |
+| Peer feedback post-match | FAIT | Etoiles 1-5, slider niveau, blend 70/30 dans level_score |
 
 ### Fonctionnalites PARTIELLEMENT implementees
 | Module | Statut | Manque |
 |--------|--------|-------|
-| Notifications push | PARTIEL | Infra OK (VAPID, SW, API), triggers auto manquants |
-| Notifications email | PARTIEL | Resend configure, templates a creer |
 | Annuaire clubs | PARTIEL | Visible sur carte, pas de page dediee |
 | Avis clubs | PARTIEL | Table club_reviews existe, pas d'UI |
+| Tests E2E (Playwright) | PARTIEL | Setup manquant, flows auth/match/chat a ecrire |
 
 ### Fonctionnalites MANQUANTES
 | Module | Priorite | Effort estime |
 |--------|----------|--------------|
-| Notifications auto-triggers | HAUTE | 1-2 semaines |
 | Pages clubs + avis | HAUTE | 1-2 semaines |
 | Tournois | MOYENNE | 2-3 semaines |
 | Reservation terrains (booking) | MOYENNE | 2-3 semaines |
-| Tests (Vitest + Playwright) | HAUTE | 2 semaines |
-| Pagination (listes longues) | MOYENNE | 1 semaine |
-| Rating post-match (peer feedback) | MOYENNE | 1 semaine |
+| Tests E2E (Playwright) | MOYENNE | 1 semaine |
 | Page offline (PWA fallback) | BASSE | 2 jours |
 | Images dans le chat | BASSE | 1 semaine |
 
@@ -157,34 +160,35 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 
 ## Roadmap — Phases d'implementation
 
-### PHASE 5 — Solidification (2-3 semaines)
+### PHASE 5 — Solidification ✅ TERMINEE
 > Rendre l'existant robuste et pret pour de vrais utilisateurs.
 
-- [ ] **Notifications automatiques**
-  - Trigger invitation match (quand un joueur rejoint/est invite)
-  - Rappel 1h avant le match (Edge Function Supabase + cron)
-  - Notification nouveau message chat (push si app fermee)
-  - Notification acceptation dans un groupe
-  - Templates email Resend (bienvenue, rappel match, resume hebdo)
-- [ ] **Tests unitaires (Vitest)**
-  - `calculate-match-score.ts` (algo matching)
-  - `calculate-elo.ts` (systeme de classement)
-  - `reliability.ts` (score de fiabilite)
-  - Validations Zod (schemas profil, match, groupe)
-  - Hooks critiques (use-player-suggestions, use-chat-realtime)
-- [ ] **Tests E2E (Playwright)**
+- [x] **Notifications automatiques**
+  - Triggers : match join/leave/cancel/complete, groupe join, chat message (debounce 30s)
+  - Rappel 75min avant match (Vercel Cron /15min, push + email)
+  - Respect `notification_preferences` JSONB par utilisateur
+  - Templates email Resend : bienvenue, match termine
+  - Fichiers : `lib/notifications/triggers.ts`, `api/notifications/trigger/route.ts`, `api/cron/match-reminder/route.ts`
+- [x] **Tests unitaires (Vitest)** — 105 tests, 0 echecs
+  - `calculate-match-score.test.ts` (22 tests : haversine, score composite, poids)
+  - `calculate-elo.test.ts` (12 tests : K-factor, margin, conservation, underdog)
+  - `reliability.test.ts` (15 tests : events, bornes, precision)
+  - `schemas.test.ts` (56 tests : 5 schemas Zod, valid/invalid/boundary)
+  - Setup : `vitest.config.ts`, `src/__tests__/setup.ts`, scripts npm
+- [ ] **Tests E2E (Playwright)** — Reporte Phase 6+
   - Flow auth complet (register -> onboarding -> accueil)
   - Flow match (creer -> rejoindre -> scorer -> stats)
   - Flow chat (nouvelle conversation -> envoyer message)
-- [ ] **Pagination**
-  - Liste matchs (infinite scroll ou bouton "charger plus")
-  - Liste joueurs
-  - Historique matchs dans stats
-  - Messages chat (scroll infini vers le haut)
-- [ ] **Peer feedback post-match**
-  - UI notation joueur apres completion match (1-5 etoiles)
-  - Integration dans le calcul ELO (30% du score)
-  - Historique des feedbacks recus dans le profil
+- [x] **Pagination "Charger plus"**
+  - Matchs : cursor `scheduled_at`, 15 par page (`MatchListClient.tsx`)
+  - Joueurs : `visibleCount` state, 10 par page
+  - Stats historique : cursor `created_at`, 10 par page (`MatchHistory.tsx` client)
+  - Chat : scroll-to-top, cursor `created_at`, 30 messages, `prevHeightRef` preserve position
+- [x] **Peer feedback post-match**
+  - `PeerFeedbackForm.tsx` : etoiles 1-5 cliquables + slider niveau 1.0-10.0 optionnel
+  - API `matches/[id]/feedback/route.ts` : validation Zod, blend 70/30 quand tous ont note
+  - `scoreToLevel()` recalcule l'enum niveau apres blend
+  - Integration dans page detail match (apres score, si completed + participant)
 
 ### PHASE 6 — Clubs & Terrains (2-3 semaines)
 > Attirer les clubs comme utilisateurs de la plateforme.
@@ -301,6 +305,7 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 ---
 
 ## Priorites immediates (prochaine session)
-1. Notifications auto-triggers (rappels, invitations, nouveaux messages)
-2. Tests Vitest sur les fonctions critiques (matching, ELO, reliability)
-3. Pagination sur les listes longues
+1. Pages clubs + systeme d'avis (Phase 6)
+2. Reservation de terrains avec paiement Stripe (Phase 6)
+3. Tests E2E Playwright sur les flows critiques
+4. Dashboard club basique

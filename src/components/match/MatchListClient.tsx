@@ -1,19 +1,82 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import MatchCard, { type MatchCardData } from '@/components/match/MatchCard';
 import { MATCH_TYPE_LABELS } from '@/lib/constants/match';
 import type { MatchType } from '@/types';
-import { Search, Swords } from 'lucide-react';
+import { Search, Swords, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/client';
+
+const PAGE_SIZE = 15;
 
 interface Props {
   matches: MatchCardData[];
 }
 
-export default function MatchListClient({ matches }: Props) {
+export default function MatchListClient({ matches: initialMatches }: Props) {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<MatchType | ''>('');
+  const [matches, setMatches] = useState<MatchCardData[]>(initialMatches);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialMatches.length >= PAGE_SIZE);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+
+    try {
+      const supabase = createClient();
+      const lastMatch = matches[matches.length - 1];
+      if (!lastMatch) return;
+
+      const { data } = await supabase
+        .from('matches')
+        .select(`
+          id, title, match_type, status, scheduled_at, duration_minutes,
+          location_name, max_players, cost_per_player, organizer_id,
+          profiles!matches_organizer_id_fkey ( full_name ),
+          match_participants ( id, status )
+        `)
+        .in('status', ['open', 'full', 'confirmed', 'in_progress'])
+        .gte('scheduled_at', new Date().toISOString())
+        .gt('scheduled_at', lastMatch.scheduled_at)
+        .order('scheduled_at', { ascending: true })
+        .limit(PAGE_SIZE);
+
+      if (!data || data.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const newMatches: MatchCardData[] = data.map((m: any) => {
+        const organizer = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+        const participants = (m.match_participants ?? []).filter(
+          (p: { status: string }) => p.status === 'confirmed' || p.status === 'invited',
+        );
+        return {
+          id: m.id,
+          title: m.title,
+          match_type: m.match_type,
+          status: m.status,
+          scheduled_at: m.scheduled_at,
+          duration_minutes: m.duration_minutes,
+          location_name: m.location_name,
+          max_players: m.max_players,
+          cost_per_player: m.cost_per_player,
+          participant_count: participants.length,
+          organizer_name: organizer?.full_name ?? null,
+        };
+      });
+
+      setMatches((prev) => [...prev, ...newMatches]);
+      if (newMatches.length < PAGE_SIZE) setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [matches, loadingMore, hasMore]);
 
   const filtered = matches.filter((m) => {
     const matchesSearch =
@@ -39,7 +102,7 @@ export default function MatchListClient({ matches }: Props) {
         />
       </div>
 
-      {/* Type filter pills (mockup: rounded-full, navy active, white inactive) */}
+      {/* Type filter pills */}
       <div className="flex gap-2">
         <button
           type="button"
@@ -74,6 +137,21 @@ export default function MatchListClient({ matches }: Props) {
           {filtered.map((m) => (
             <MatchCard key={m.id} match={m} />
           ))}
+
+          {/* Load more button */}
+          {hasMore && !search && !typeFilter && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={loadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Charger plus
+            </Button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">

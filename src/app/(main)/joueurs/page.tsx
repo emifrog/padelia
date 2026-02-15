@@ -14,6 +14,7 @@ export default function JoueursPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [levelFilter, setLevelFilter] = useState<PlayerLevel | ''>('');
   const [distanceFilter, setDistanceFilter] = useState(30);
+  const [visibleCount, setVisibleCount] = useState(10);
 
   const { suggestions, loading, error } = usePlayerSuggestions({
     maxDistance: distanceFilter,
@@ -134,9 +135,18 @@ export default function JoueursPage() {
           <p className="text-xs text-gray-400">
             {filtered.length} joueur{filtered.length > 1 ? 's' : ''} trouvé{filtered.length > 1 ? 's' : ''}
           </p>
-          {filtered.map((s) => (
+          {filtered.slice(0, visibleCount).map((s) => (
             <PlayerSuggestionCard key={s.profile.id} suggestion={s} />
           ))}
+          {visibleCount < filtered.length && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setVisibleCount((v) => v + 10)}
+            >
+              Charger plus ({filtered.length - visibleCount} restants)
+            </Button>
+          )}
         </div>
       )}
     </div>

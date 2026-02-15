@@ -11,6 +11,7 @@ import { Calendar, Clock, MapPin, Users, Euro, ChevronLeft, Trophy } from 'lucid
 import { cn } from '@/lib/utils';
 import MatchActions from '@/components/match/MatchActions';
 import ScoreSection from '@/components/match/ScoreSection';
+import PeerFeedbackForm from '@/components/match/PeerFeedbackForm';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -231,6 +232,25 @@ export default async function MatchDetailPage({ params }: PageProps) {
                 <p className="text-xs text-gray-400">Équipe B</p>
               </div>
             </div>
+          </div>
+        </>
+      )}
+
+      {/* Peer feedback (if completed and participant) */}
+      {isCompleted && isParticipant && (
+        <>
+          <Separator />
+          <div className="space-y-3">
+            <h2 className="font-semibold text-navy">Feedback</h2>
+            <PeerFeedbackForm
+              matchId={match.id}
+              participants={(participants ?? []).map((p: { player_id: string; rating_given: number | null; profiles: { full_name: string } | { full_name: string }[] }) => ({
+                player_id: p.player_id,
+                full_name: (Array.isArray(p.profiles) ? p.profiles[0] : p.profiles)?.full_name ?? 'Joueur',
+                rating_given: p.rating_given,
+              }))}
+              currentUserId={user.id}
+            />
           </div>
         </>
       )}

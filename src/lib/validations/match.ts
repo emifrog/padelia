@@ -34,3 +34,11 @@ export const completeMatchSchema = z.object({
 });
 
 export type CompleteMatchData = z.infer<typeof completeMatchSchema>;
+
+// Peer feedback after match completion
+export const peerFeedbackSchema = z.object({
+  rating: z.number().int().min(1, 'Note minimum 1').max(5, 'Note maximum 5'),
+  level_feedback: z.number().min(1.0).max(10.0).optional(),
+});
+
+export type PeerFeedbackData = z.infer<typeof peerFeedbackSchema>;

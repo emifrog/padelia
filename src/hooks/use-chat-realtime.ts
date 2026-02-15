@@ -25,10 +25,16 @@ interface UseChatRealtimeOptions {
   userId: string;
 }
 
+const INITIAL_LIMIT = 30;
+const OLDER_PAGE_SIZE = 30;
+
 export function useChatRealtime({ conversationId, userId }: UseChatRealtimeOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasOlder, setHasOlder] = useState(true);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const lastNotifRef = useRef<number>(0); // Debounce notifications (30s)
   const supabase = createClient();
 
   // Load initial messages
@@ -55,8 +61,8 @@ export function useChatRealtime({ conversationId, userId }: UseChatRealtimeOptio
           )
         `)
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true })
-        .limit(100);
+        .order('created_at', { ascending: false })
+        .limit(INITIAL_LIMIT);
 
       if (!cancelled && data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,7 +77,9 @@ export function useChatRealtime({ conversationId, userId }: UseChatRealtimeOptio
             } : undefined,
           };
         });
-        setMessages(mapped);
+        // Reverse to get chronological order (we fetched desc for most recent)
+        setMessages(mapped.reverse());
+        setHasOlder(data.length >= INITIAL_LIMIT);
       }
       if (!cancelled) setLoading(false);
     }
@@ -127,6 +135,50 @@ export function useChatRealtime({ conversationId, userId }: UseChatRealtimeOptio
     };
   }, [conversationId, supabase]);
 
+  // Load older messages (pagination)
+  const loadOlderMessages = useCallback(async () => {
+    if (loadingOlder || !hasOlder || messages.length === 0) return;
+    setLoadingOlder(true);
+
+    try {
+      const oldestMessage = messages[0];
+      const { data } = await supabase
+        .from('messages')
+        .select(`
+          id, conversation_id, sender_id, content, type, metadata, is_edited, created_at,
+          profiles!messages_sender_id_fkey ( full_name, username, avatar_url )
+        `)
+        .eq('conversation_id', conversationId)
+        .lt('created_at', oldestMessage.created_at)
+        .order('created_at', { ascending: false })
+        .limit(OLDER_PAGE_SIZE);
+
+      if (!data || data.length === 0) {
+        setHasOlder(false);
+        return;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mapped = data.map((m: any) => {
+        const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+        return {
+          ...m,
+          sender: profile ? {
+            full_name: profile.full_name,
+            username: profile.username,
+            avatar_url: profile.avatar_url,
+          } : undefined,
+        };
+      });
+
+      // Prepend older messages (reverse to chronological order)
+      setMessages((prev) => [...mapped.reverse(), ...prev]);
+      if (data.length < OLDER_PAGE_SIZE) setHasOlder(false);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [conversationId, messages, loadingOlder, hasOlder, supabase]);
+
   // Send message
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -146,6 +198,20 @@ export function useChatRealtime({ conversationId, userId }: UseChatRealtimeOptio
       .update({ last_read_at: new Date().toISOString() })
       .eq('conversation_id', conversationId)
       .eq('user_id', userId);
+
+    // Fire-and-forget: push notification to other members (debounced 30s)
+    const now = Date.now();
+    if (now - lastNotifRef.current > 30_000) {
+      lastNotifRef.current = now;
+      fetch('/api/notifications/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'new_chat_message',
+          data: { conversation_id: conversationId, preview: content.trim().slice(0, 80) },
+        }),
+      }).catch(() => {});
+    }
   }, [conversationId, userId, supabase]);
 
   // Mark as read
@@ -157,5 +223,5 @@ export function useChatRealtime({ conversationId, userId }: UseChatRealtimeOptio
       .eq('user_id', userId);
   }, [conversationId, userId, supabase]);
 
-  return { messages, loading, sendMessage, markAsRead };
+  return { messages, loading, loadingOlder, hasOlder, sendMessage, markAsRead, loadOlderMessages };
 }

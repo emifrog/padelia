@@ -32,7 +32,7 @@ export default async function MatchsPage() {
     .in('status', ['open', 'full', 'confirmed', 'in_progress'])
     .gte('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true })
-    .limit(50);
+    .limit(15);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const matchesWithCounts = (matches ?? []).map((m: any) => {

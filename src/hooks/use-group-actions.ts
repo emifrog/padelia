@@ -49,6 +49,14 @@ export function useGroupActions({ groupId, userId, onUpdate }: UseGroupActionsOp
       if (error) throw error;
 
       toast.success('Tu as rejoint le groupe !');
+
+      // Fire-and-forget: notify group admins
+      fetch('/api/notifications/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'group_join', data: { group_id: groupId } }),
+      }).catch(() => {});
+
       onUpdate?.();
     } catch {
       toast.error('Erreur pour rejoindre le groupe');

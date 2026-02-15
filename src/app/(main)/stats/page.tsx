@@ -23,13 +23,13 @@ export default async function StatsPage() {
 
   if (!profile) redirect('/onboarding');
 
-  // Fetch player stats history (last 20)
+  // Fetch player stats history (last 10, paginated on client)
   const { data: statsHistory } = await supabase
     .from('player_stats')
     .select('*')
     .eq('player_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(20);
+    .limit(10);
 
   // Fetch top partners
   const { data: partnerStats } = await supabase

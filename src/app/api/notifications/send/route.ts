@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const { user_ids, payload }: { user_ids: string[]; payload: PushPayload } =
+    const { user_ids, payload, type }: { user_ids: string[]; payload: PushPayload; type?: string } =
       await request.json();
 
     if (!user_ids?.length || !payload?.title) {
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     // Also store in notifications table
     const notifications = user_ids.map((userId) => ({
       user_id: userId,
-      type: 'system' as const,
+      type: (type ?? 'system') as 'system',
       title: payload.title,
       body: payload.body,
       data: { url: payload.url, tag: payload.tag },

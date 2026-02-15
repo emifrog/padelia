@@ -16,18 +16,48 @@ interface Props {
 }
 
 export default function ChatWindow({ conversationId, userId, displayName, conversationType }: Props) {
-  const { messages, loading, sendMessage, markAsRead } = useChatRealtime({
+  const { messages, loading, loadingOlder, hasOlder, sendMessage, markAsRead, loadOlderMessages } = useChatRealtime({
     conversationId,
     userId,
   });
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevHeightRef = useRef<number>(0);
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom on new messages (only if already near bottom)
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const el = scrollRef.current;
+      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+      if (isNearBottom || prevHeightRef.current === 0) {
+        el.scrollTop = el.scrollHeight;
+      }
     }
   }, [messages]);
+
+  // Preserve scroll position after loading older messages
+  useEffect(() => {
+    if (scrollRef.current && prevHeightRef.current > 0) {
+      const newHeight = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTop = newHeight - prevHeightRef.current;
+    }
+  }, [loadingOlder]);
+
+  // Detect scroll to top for loading older messages
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    function onScroll() {
+      if (!el) return;
+      if (el.scrollTop < 50 && hasOlder && !loadingOlder) {
+        prevHeightRef.current = el.scrollHeight;
+        loadOlderMessages();
+      }
+    }
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [hasOlder, loadingOlder, loadOlderMessages]);
 
   // Mark as read on mount
   useEffect(() => {
@@ -63,6 +93,11 @@ export default function ChatWindow({ conversationId, userId, displayName, conver
           </div>
         ) : (
           <div className="space-y-2">
+            {loadingOlder && (
+              <div className="flex justify-center py-2">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
             {messages.map((msg) => (
               <MessageBubble
                 key={msg.id}
