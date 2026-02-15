@@ -29,34 +29,42 @@ interface PlayerMarker {
   city: string | null;
 }
 
+const DEFAULT_LOCATION = { lat: 48.8566, lng: 2.3522 }; // Paris
+
 export default function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const hasMapboxToken = !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const [loading, setLoading] = useState(hasMapboxToken);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(() => {
+    // Set default location immediately if geolocation is not available
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      return DEFAULT_LOCATION;
+    }
+    return null;
+  });
   const [showClubs, setShowClubs] = useState(true);
   const [showPlayers, setShowPlayers] = useState(true);
   const [clubs, setClubs] = useState<ClubMarker[]>([]);
   const [players, setPlayers] = useState<PlayerMarker[]>([]);
   const supabase = createClient();
 
-  // Get user location
+  // Get user location via geolocation API
   useEffect(() => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        },
-        () => {
-          // Default to Paris
-          setUserLocation({ lat: 48.8566, lng: 2.3522 });
-        },
-      );
-    } else {
-      setUserLocation({ lat: 48.8566, lng: 2.3522 });
-    }
-  }, []);
+    if (userLocation) return; // Already resolved (e.g. no geolocation)
+    if (!('geolocation' in navigator)) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      () => {
+        // Default to Paris on error
+        setUserLocation(DEFAULT_LOCATION);
+      },
+    );
+  }, [userLocation]);
 
   // Fetch data
   useEffect(() => {
@@ -89,13 +97,9 @@ export default function MapView() {
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current || !userLocation || map.current) return;
+    if (!hasMapboxToken) return;
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
     mapboxgl.accessToken = token;
 
     map.current = new mapboxgl.Map({
@@ -114,7 +118,7 @@ export default function MapView() {
       .addTo(map.current);
 
     map.current.on('load', () => setLoading(false));
-  }, [userLocation]);
+  }, [userLocation, hasMapboxToken]);
 
   // Update markers
   const updateMarkers = useCallback(() => {

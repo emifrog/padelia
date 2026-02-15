@@ -28,8 +28,8 @@ export default function CreerMatchPage() {
     watch,
     setValue,
     formState: { errors },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useForm<CreateMatchData>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver type mismatch with react-hook-form
     resolver: zodResolver(createMatchSchema) as any,
     defaultValues: {
       title: '',

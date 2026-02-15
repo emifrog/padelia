@@ -29,7 +29,7 @@ async function seedTestUser() {
   // We can't run raw SQL, so let's try a workaround:
   // Use the Management API with fetch to drop/create trigger
 
-  const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const _projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL!
     .replace('https://', '')
     .replace('.supabase.co', '');
 

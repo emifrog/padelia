@@ -1,7 +1,7 @@
 'use client';
 
 import { usePlayerSuggestions } from '@/hooks/use-player-suggestions';
-import { Loader2, UserSearch, MapPin } from 'lucide-react';
+import { Loader2, UserSearch } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 

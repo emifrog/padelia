@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Mockup file (not part of the app)
+    "padelia-mockup.jsx",
   ]),
 ]);
 

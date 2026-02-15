@@ -1,25 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Bell, X } from 'lucide-react';
 import { toast } from 'sonner';
 
+function getInitialPermission(): NotificationPermission | 'unsupported' {
+  if (typeof window === 'undefined') return 'default';
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return 'unsupported';
+  return Notification.permission;
+}
+
+function getInitialDismissed(): boolean {
+  if (typeof window === 'undefined') return false;
+  return sessionStorage.getItem('push_dismissed') === '1';
+}
+
 export default function PushPermission() {
-  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-      setPermission('unsupported');
-      return;
-    }
-    setPermission(Notification.permission);
-
-    // Don't show banner if already dismissed this session
-    const wasDismissed = sessionStorage.getItem('push_dismissed');
-    if (wasDismissed) setDismissed(true);
-  }, []);
+  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(getInitialPermission);
+  const [dismissed, setDismissed] = useState(getInitialDismissed);
 
   async function requestPermission() {
     try {

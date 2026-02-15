@@ -37,7 +37,7 @@ export function useChatRealtime({ conversationId, userId }: UseChatRealtimeOptio
 
     async function loadMessages() {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('messages')
         .select(`
           id,
