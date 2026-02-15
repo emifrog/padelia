@@ -1,47 +1,26 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Bell } from 'lucide-react';
 
-const SCREEN_TITLES: Record<string, string> = {
-  '/matchs': 'Matchs',
-  '/joueurs': 'Joueurs',
-  '/carte': 'Carte',
-  '/chat': 'Messages',
-  '/groupes': 'Groupes',
-  '/stats': 'Statistiques',
-  '/profil': 'Mon profil',
-};
-
 export default function Header() {
-  const pathname = usePathname();
-
-  // Find matching title (startsWith for nested routes)
-  const title = Object.entries(SCREEN_TITLES).find(([path]) =>
-    pathname.startsWith(path),
-  )?.[1];
-
-  const isHome = pathname === '/accueil' || pathname === '/';
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-40 border-b border-border bg-navy-inter backdrop-blur supports-[backdrop-filter]:bg-navy-inter">
       <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-4">
-        {isHome ? (
-          <Link href="/accueil" className="flex items-center gap-2.5">
-            {/* Green gradient logo "P" */}
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-gradient text-base font-black text-white">
-              P
-            </div>
-            <span className="text-lg font-extrabold tracking-wider text-navy">
-              PADELIA
-            </span>
-          </Link>
-        ) : (
-          <h1 className="text-2xl font-extrabold text-navy">
-            {title ?? 'Padelia'}
-          </h1>
-        )}
+        <Link href="/accueil" className="flex items-center gap-2.5">
+          <Image
+            src="/logo-small.png"
+            alt="Padelia"
+            width={50}
+            height={50}
+            className="rounded-full object-contain"
+          />
+          <span className="text-lg font-extrabold tracking-wider text-white">
+            PADELIA
+          </span>
+        </Link>
 
         {/* Bell with red notification dot */}
         <Link
