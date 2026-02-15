@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { MatchStatus, MatchType } from '@/types';
-import { Clock, MapPin, ChevronRight, Users, Loader2 } from 'lucide-react';
+import { Clock, MapPin, ChevronRight, Users, Star, Loader2 } from 'lucide-react';
 import SuggestionsSection from '@/components/accueil/SuggestionsSection';
 import FabButton from '@/components/accueil/FabButton';
 
@@ -58,6 +58,7 @@ export default async function AccueilPage() {
     { data: upcomingMatches },
     { data: openMatches },
     { data: myGroups },
+    { data: nearbyClubs },
   ] = await Promise.all([
     supabase
       .from('match_participants')
@@ -85,6 +86,12 @@ export default async function AccueilPage() {
       .select('group_id, groups (id, name, city, member_count)')
       .eq('user_id', user.id)
       .limit(4),
+    supabase
+      .from('clubs')
+      .select('id, name, city, rating, total_reviews, logo_url')
+      .eq('status', 'active')
+      .order('rating', { ascending: false })
+      .limit(3),
   ]);
 
   const myMatches = (upcomingMatches ?? []).filter((mp: ParticipantWithMatch) => {
@@ -275,6 +282,51 @@ export default async function AccueilPage() {
           <SuggestionsSection />
         </Suspense>
       </section>
+
+      {/* ── Clubs à proximité ── */}
+      {(nearbyClubs ?? []).length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-[17px] font-bold text-navy">
+              <span className="mr-1.5">🏟️</span>Clubs à proximité
+            </h2>
+            <Link href="/clubs" className="text-[13px] font-semibold text-green-padel">
+              Voir tout
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {(nearbyClubs ?? []).map((c: { id: string; name: string; city: string; rating: number; total_reviews: number; logo_url: string | null }) => (
+              <Link
+                key={c.id}
+                href={`/clubs/${c.id}`}
+                className="flex items-center gap-3 rounded-xl bg-white p-3.5 shadow-padel"
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-green-subtle text-[22px]">
+                  {c.logo_url ? (
+                    <img src={c.logo_url} alt={c.name} className="h-11 w-11 rounded-lg object-cover" />
+                  ) : (
+                    '🏟️'
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14px] font-bold text-navy">{c.name}</p>
+                  <div className="flex items-center gap-1.5 text-[12px] text-gray-400">
+                    <span>{c.city}</span>
+                    {c.rating > 0 && (
+                      <>
+                        <span>·</span>
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                        <span>{Number(c.rating).toFixed(1)}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-gray-300" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Mes groupes ── */}
       <section>

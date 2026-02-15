@@ -127,9 +127,9 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 | Chat temps reel | FAIT | Supabase Realtime, envoi/reception, mark read, pagination scroll infini |
 | Recherche joueurs + matching | FAIT | Filtre niveau/distance, algo composite 5 criteres |
 | Groupes/communautes | FAIT | CRUD, membres, admin, matchs de groupe |
-| Carte Mapbox | FAIT | Clubs + joueurs, geolocalisation, layers |
+| Carte Mapbox | FAIT | Clubs + joueurs, geolocalisation, layers, lien vers page club |
 | Stats + classements | FAIT | Win rate, streak, partenaires, historique, ELO |
-| Paiements Stripe | FAIT | Checkout, webhooks, abonnement premium |
+| Paiements Stripe | FAIT | Checkout, webhooks, abonnement premium, paiement reservation |
 | PWA | FAIT | Service Worker, manifest, install prompt |
 | Geolocalisation | FAIT | Permission prompt, sauvegarde coords profil |
 | Notifications auto-triggers | FAIT | Join/leave/cancel match, groupe, chat (debounce 30s), match completed |
@@ -138,20 +138,21 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 | Tests unitaires (Vitest) | FAIT | 105 tests : matching, ELO, reliability, Zod schemas |
 | Pagination "Charger plus" | FAIT | Matchs, joueurs, stats, chat (cursor-based) |
 | Peer feedback post-match | FAIT | Etoiles 1-5, slider niveau, blend 70/30 dans level_score |
+| Annuaire clubs | FAIT | `/clubs` annuaire recherche ville/nom/rating, `/clubs/[id]` detail, carte lien popup |
+| Systeme d'avis clubs | FAIT | Formulaire note 1-5 + commentaire, recalcul moyenne, liste paginee |
+| Reservation terrains | FAIT | Grille dispo, flow 4 etapes, Stripe Checkout, annulation >24h remboursement |
+| Dashboard club | FAIT | Stats (revenue, remplissage, bookings, rating), timeline jour, vue semaine |
+| Mes reservations | FAIT | `/profil/reservations` a venir/passees, annulation avec hook |
 
 ### Fonctionnalites PARTIELLEMENT implementees
 | Module | Statut | Manque |
 |--------|--------|-------|
-| Annuaire clubs | PARTIEL | Visible sur carte, pas de page dediee |
-| Avis clubs | PARTIEL | Table club_reviews existe, pas d'UI |
 | Tests E2E (Playwright) | PARTIEL | Setup manquant, flows auth/match/chat a ecrire |
 
 ### Fonctionnalites MANQUANTES
 | Module | Priorite | Effort estime |
 |--------|----------|--------------|
-| Pages clubs + avis | HAUTE | 1-2 semaines |
-| Tournois | MOYENNE | 2-3 semaines |
-| Reservation terrains (booking) | MOYENNE | 2-3 semaines |
+| Tournois | HAUTE | 2-3 semaines |
 | Tests E2E (Playwright) | MOYENNE | 1 semaine |
 | Page offline (PWA fallback) | BASSE | 2 jours |
 | Images dans le chat | BASSE | 1 semaine |
@@ -190,27 +191,40 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
   - `scoreToLevel()` recalcule l'enum niveau apres blend
   - Integration dans page detail match (apres score, si completed + participant)
 
-### PHASE 6 — Clubs & Terrains (2-3 semaines)
+### PHASE 6 — Clubs & Terrains ✅ TERMINEE
 > Attirer les clubs comme utilisateurs de la plateforme.
 
-- [ ] **Pages clubs**
-  - `/clubs` : annuaire avec recherche par ville, nom, rating
-  - `/clubs/[id]` : detail club (infos, terrains, horaires, avis)
-  - Photos club (Supabase Storage)
-  - Lien depuis la carte Mapbox vers page club
-- [ ] **Systeme d'avis**
-  - Formulaire d'avis apres visite (note 1-5, commentaire)
-  - Affichage moyenne + liste avis sur page club
-  - Moderation basique (signalement)
-- [ ] **Reservation de terrains**
-  - Grille de disponibilite par terrain (creneaux horaires)
-  - Flow de reservation : choisir creneau -> payer (Stripe) -> confirmation
-  - Gestion annulation (politique remboursement)
-  - Dashboard club : voir les reservations, bloquer des creneaux
-  - Table `bookings` deja en base (schema pret)
-- [ ] **Dashboard club (base)**
-  - Vue reservations du jour/semaine
-  - Stats basiques (taux remplissage, revenus)
+- [x] **Pages clubs**
+  - `/clubs` : annuaire avec recherche par ville/nom, filtre rating, pagination cursor-based (12/page)
+  - `/clubs/[id]` : detail club (ClubInfo, CourtList, OpeningHours, ReviewList, ReviewForm)
+  - Section "Clubs a proximite" sur la page accueil (top 3 par rating)
+  - Lien "Voir le club" dans popup carte Mapbox
+  - Types : Club, Court, Booking, ClubReview + enums ClubStatus, CourtSurface, BookingStatus
+  - Constantes : `lib/constants/club.ts` (surfaces, amenites, labels, couleurs)
+  - Composants : ClubCard, ClubListClient, ClubInfo, OpeningHours, CourtList, StarRating
+- [x] **Systeme d'avis**
+  - ReviewForm : etoiles 1-5 cliquables + commentaire optionnel (max 500 chars)
+  - Recalcul automatique clubs.rating et clubs.total_reviews apres insert
+  - ReviewList : pagination cursor created_at, 10 par page
+  - ReviewCard : memo(), date relative, avatar
+  - Validation Zod : `clubReviewSchema`
+- [x] **Reservation de terrains**
+  - API availability : GET public, retourne creneaux occupes sans details (bypass RLS)
+  - AvailabilityGrid : creneaux horaires generes depuis opening_hours JSONB
+  - Flow 4 etapes : terrain → date (14j max) → creneau → confirmation + paiement
+  - API bookings/create : Stripe Checkout mode payment, GIST exclusion (23P01 → 409)
+  - API bookings/cancel : politique >24h remboursement complet Stripe, <24h refuse
+  - Webhook Stripe : checkout.session.completed (booking) + charge.refunded
+  - Hook `use-booking-actions.ts` : cancelBooking avec toast feedback
+  - BookingCard, BookingConfirmation, ReservationsList
+  - `/profil/reservations` : a venir / passees, annulation
+  - Validation Zod : `createBookingSchema`
+- [x] **Dashboard club (base)**
+  - Auth check owner_id + redirect si non-proprietaire
+  - DashboardStats : 4 cards (revenue mois, taux remplissage, total bookings, note moyenne)
+  - DashboardTimeline : reservations du jour par terrain
+  - DashboardWeekView : 7 jours scrollable, barres remplissage colorees
+  - Fetch parallele : bookings jour/semaine/mois via Promise.all
 
 ### PHASE 7 — Tournois & Competition (2-3 semaines)
 > Ajouter la dimension competitive pour fideliser les joueurs.
@@ -305,7 +319,6 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 ---
 
 ## Priorites immediates (prochaine session)
-1. Pages clubs + systeme d'avis (Phase 6)
-2. Reservation de terrains avec paiement Stripe (Phase 6)
-3. Tests E2E Playwright sur les flows critiques
-4. Dashboard club basique
+1. Tournois & Competition (Phase 7) — schema, CRUD, brackets, inscriptions
+2. Tests E2E Playwright sur les flows critiques (auth, match, chat, booking)
+3. Photos club (Supabase Storage) et moderation avis

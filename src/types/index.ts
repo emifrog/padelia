@@ -139,3 +139,72 @@ export const GOAL_LABELS: Record<PlayerGoal, string> = {
   competition: 'Compétition',
   social: 'Social',
 };
+
+// ============================================================
+// Clubs, Courts, Bookings, Reviews
+// ============================================================
+
+export type ClubStatus = 'pending' | 'active' | 'suspended';
+export type CourtSurface = 'vitree' | 'mur' | 'panoramique' | 'exterieur';
+export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+
+export interface Club {
+  id: string;
+  owner_id: string | null;
+  name: string;
+  slug: string;
+  description: string | null;
+  logo_url: string | null;
+  cover_url: string | null;
+  address: string;
+  city: string;
+  postal_code: string | null;
+  latitude: number;
+  longitude: number;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  status: ClubStatus;
+  opening_hours: Record<string, { open: string; close: string }>;
+  amenities: string[];
+  stripe_account_id: string | null;
+  rating: number;
+  total_reviews: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Court {
+  id: string;
+  club_id: string;
+  name: string;
+  surface: CourtSurface;
+  is_indoor: boolean;
+  is_active: boolean;
+  hourly_rate: number | null;
+  created_at: string;
+}
+
+export interface Booking {
+  id: string;
+  court_id: string;
+  booked_by: string;
+  match_id: string | null;
+  start_time: string;
+  end_time: string;
+  status: BookingStatus;
+  total_amount: number;
+  stripe_payment_intent_id: string | null;
+  cancelled_at: string | null;
+  cancellation_reason: string | null;
+  created_at: string;
+}
+
+export interface ClubReview {
+  id: string;
+  club_id: string;
+  user_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}

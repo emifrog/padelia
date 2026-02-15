@@ -41,6 +41,22 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.supabase_user_id;
 
+        // Handle booking payment
+        if (session.metadata?.type === 'booking') {
+          const bookingId = session.metadata.booking_id;
+          if (bookingId) {
+            await supabase
+              .from('bookings')
+              .update({
+                status: 'confirmed',
+                stripe_payment_intent_id: session.payment_intent as string,
+              })
+              .eq('id', bookingId);
+          }
+          break;
+        }
+
+        // Handle subscription payment
         if (userId && session.subscription) {
           const subResponse = await stripeClient.subscriptions.retrieve(
             session.subscription as string,
@@ -59,6 +75,20 @@ export async function POST(request: NextRequest) {
                 : null,
             })
             .eq('id', userId);
+        }
+        break;
+      }
+
+      case 'charge.refunded': {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const charge = event.data.object as any;
+        const paymentIntentId = charge.payment_intent as string;
+        if (paymentIntentId) {
+          await supabase
+            .from('bookings')
+            .update({ status: 'cancelled' })
+            .eq('stripe_payment_intent_id', paymentIntentId)
+            .eq('status', 'confirmed');
         }
         break;
       }

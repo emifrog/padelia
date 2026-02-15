@@ -143,6 +143,45 @@ export function GroupesSkeleton() {
   );
 }
 
+export function ClubsSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-7 w-32" />
+      {/* Search */}
+      <Skeleton className="h-10 w-full rounded-lg" />
+      {/* Club cards */}
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-[100px] w-full rounded-xl" />
+      ))}
+    </div>
+  );
+}
+
+export function ClubDetailSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-9 w-9 rounded-lg" />
+        <Skeleton className="h-6 w-16" />
+      </div>
+      {/* Cover */}
+      <Skeleton className="h-44 w-full rounded-xl" />
+      {/* Name + rating */}
+      <Skeleton className="h-7 w-56" />
+      <Skeleton className="h-4 w-40" />
+      {/* Contact */}
+      <Skeleton className="h-[120px] w-full rounded-xl" />
+      {/* Hours */}
+      <Skeleton className="h-[200px] w-full rounded-xl" />
+      {/* Courts */}
+      <Skeleton className="h-5 w-32" />
+      {Array.from({ length: 2 }).map((_, i) => (
+        <Skeleton key={i} className="h-20 w-full rounded-xl" />
+      ))}
+    </div>
+  );
+}
+
 export function JoueursSkeleton() {
   return (
     <div className="space-y-4">

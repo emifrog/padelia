@@ -160,6 +160,7 @@ export default function MapView() {
             <p style="font-size:12px;color:#666;margin:0 0 2px;">${club.address}</p>
             <p style="font-size:12px;color:#666;margin:0 0 4px;">${club.city}</p>
             ${stars}
+            <a href="/clubs/${club.id}" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:#3EAF4B;text-decoration:none;">Voir le club →</a>
           </div>
         `);
 
