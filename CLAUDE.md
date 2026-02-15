@@ -134,7 +134,7 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 | Geolocalisation | FAIT | Permission prompt, sauvegarde coords profil |
 | Notifications auto-triggers | FAIT | Join/leave/cancel match, groupe, chat (debounce 30s), match completed |
 | Notifications email | FAIT | Templates Resend (bienvenue, match termine), lazy-init |
-| Rappel match (cron) | FAIT | Vercel Cron /15min, push + email 75min avant |
+| Rappel match (cron) | FAIT | Vercel Cron 1x/jour 8h UTC (Hobby plan), push + email 75min avant |
 | Tests unitaires (Vitest) | FAIT | 105 tests : matching, ELO, reliability, Zod schemas |
 | Pagination "Charger plus" | FAIT | Matchs, joueurs, stats, chat (cursor-based) |
 | Peer feedback post-match | FAIT | Etoiles 1-5, slider niveau, blend 70/30 dans level_score |
@@ -165,7 +165,7 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 
 - [x] **Notifications automatiques**
   - Triggers : match join/leave/cancel/complete, groupe join, chat message (debounce 30s)
-  - Rappel 75min avant match (Vercel Cron /15min, push + email)
+  - Rappel 75min avant match (Vercel Cron 1x/jour 8h UTC (Hobby plan), push + email)
   - Respect `notification_preferences` JSONB par utilisateur
   - Templates email Resend : bienvenue, match termine
   - Fichiers : `lib/notifications/triggers.ts`, `api/notifications/trigger/route.ts`, `api/cron/match-reminder/route.ts`

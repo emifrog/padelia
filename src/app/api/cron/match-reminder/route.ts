@@ -11,9 +11,12 @@ function getAdminClient() {
 
 /**
  * GET /api/cron/match-reminder
- * Vercel Cron Job — runs every 15 minutes.
- * Finds matches starting within the next 75 minutes that haven't been reminded yet,
+ * Vercel Cron Job — runs once daily at 8:00 AM UTC.
+ * Finds all matches scheduled today that haven't been reminded yet,
  * then sends push + email reminders to all participants.
+ *
+ * Note: Vercel Hobby plan limits cron to 1x/day.
+ * Upgrade to Pro for more frequent schedules (e.g. every 15 min).
  */
 export async function GET(request: NextRequest) {
   // Verify Vercel Cron secret
@@ -25,15 +28,16 @@ export async function GET(request: NextRequest) {
   const supabase = getAdminClient();
 
   const now = new Date();
-  const in75min = new Date(now.getTime() + 75 * 60 * 1000);
+  const endOfDay = new Date(now);
+  endOfDay.setUTCHours(23, 59, 59, 999);
 
-  // Find matches starting within 75 minutes that haven't been reminded
+  // Find all matches scheduled today that haven't been reminded
   const { data: matches, error } = await supabase
     .from('matches')
     .select('id, title, scheduled_at, reminder_sent')
     .in('status', ['open', 'full', 'confirmed'])
     .gte('scheduled_at', now.toISOString())
-    .lte('scheduled_at', in75min.toISOString())
+    .lte('scheduled_at', endOfDay.toISOString())
     .or('reminder_sent.is.null,reminder_sent.eq.false');
 
   if (error) {
