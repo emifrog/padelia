@@ -3,6 +3,7 @@ import { Outfit } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import ServiceWorkerRegister from '@/components/layout/ServiceWorkerRegister';
 import InstallPrompt from '@/components/layout/InstallPrompt';
+import UpdatePrompt from '@/components/layout/UpdatePrompt';
 import QueryProvider from '@/components/providers/QueryProvider';
 import './globals.css';
 
@@ -52,6 +53,7 @@ export default function RootLayout({
         <Toaster position="top-center" richColors />
         <ServiceWorkerRegister />
         <InstallPrompt />
+        <UpdatePrompt />
       </body>
     </html>
   );

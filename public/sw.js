@@ -1,6 +1,9 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = 'padelia-v1';
+// Cache version — updated automatically at each deploy via Vercel build hash
+// When sw.js content changes, the browser detects a new SW and triggers update flow
+const CACHE_VERSION = '2';
+const CACHE_NAME = `padelia-v${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline';
 
 // Assets to cache on install
@@ -11,27 +14,41 @@ const PRECACHE_ASSETS = [
   '/icons/icon-512.svg',
 ];
 
-// Install: precache core assets
+// Install: precache core assets, do NOT skipWaiting automatically
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
   );
-  self.skipWaiting();
+  // Do NOT call self.skipWaiting() here — wait for user action via postMessage
 });
 
-// Activate: clean old caches
+// Activate: clean old caches, claim clients, notify about activation
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       )
-    )
+    ).then(() => {
+      // Notify all clients that a new version is now active
+      self.clients.matchAll({ type: 'window' }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'SW_ACTIVATED', version: CACHE_VERSION });
+        });
+      });
+      return self.clients.claim();
+    })
   );
-  self.clients.claim();
 });
 
-// Fetch: network-first for API, stale-while-revalidate for assets
+// Listen for messages from the app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Fetch: network-first for pages, stale-while-revalidate for assets
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
