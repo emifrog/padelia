@@ -1,11 +1,41 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { LEVEL_LABELS } from '@/types';
-import type { PlayerLevel } from '@/types';
-import { Clock, MapPin, ChevronRight, Flame, Zap, Users } from 'lucide-react';
+import type { MatchStatus, MatchType } from '@/types';
+import { Clock, MapPin, ChevronRight, Users } from 'lucide-react';
 import SuggestionsSection from '@/components/accueil/SuggestionsSection';
 import FabButton from '@/components/accueil/FabButton';
+
+interface MatchData {
+  id: string;
+  title: string | null;
+  scheduled_at: string;
+  location_name: string | null;
+  status: MatchStatus;
+  max_players: number;
+  match_type: MatchType;
+  cost_per_player?: number;
+  match_participants: { player_id: string }[];
+}
+
+interface ParticipantWithMatch {
+  match_id: string;
+  status: string;
+  matches: MatchData | MatchData[];
+}
+
+interface NormalizedParticipant {
+  match_id: string;
+  status: string;
+  matches: MatchData;
+}
+
+interface GroupData {
+  id: string;
+  name: string;
+  city: string | null;
+  member_count: number;
+}
 
 export const metadata = { title: 'Accueil' };
 
@@ -44,11 +74,10 @@ export default async function AccueilPage() {
     .order('created_at', { ascending: false })
     .limit(5);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const myMatches = (upcomingMatches ?? []).filter((mp: any) => {
+  const myMatches = (upcomingMatches ?? []).filter((mp: ParticipantWithMatch) => {
     const match = Array.isArray(mp.matches) ? mp.matches[0] : mp.matches;
     return match && ['open', 'full', 'confirmed'].includes(match.status);
-  }).map((mp: any) => ({
+  }).map((mp: ParticipantWithMatch): NormalizedParticipant => ({
     ...mp,
     matches: Array.isArray(mp.matches) ? mp.matches[0] : mp.matches,
   }));
@@ -71,11 +100,9 @@ export default async function AccueilPage() {
     .eq('user_id', user.id)
     .limit(4);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const groups = (myGroups ?? []).map((gm: any) => {
-    const g = Array.isArray(gm.groups) ? gm.groups[0] : gm.groups;
-    return g;
-  }).filter(Boolean);
+  const groups = (myGroups ?? []).map((gm: { group_id: string; groups: GroupData | GroupData[] }) => {
+    return Array.isArray(gm.groups) ? gm.groups[0] : gm.groups;
+  }).filter((g): g is GroupData => Boolean(g));
 
   const matchTypeLabel = (type: string) => {
     switch (type) {
@@ -110,8 +137,7 @@ export default async function AccueilPage() {
 
         {myMatches.length > 0 ? (
           <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 scrollbar-none">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {myMatches.map((mp: any) => {
+            {myMatches.map((mp) => {
               const m = mp.matches;
               const playerCount = m.match_participants?.length ?? 0;
               return (
@@ -190,8 +216,7 @@ export default async function AccueilPage() {
 
         {(openMatches ?? []).length > 0 ? (
           <div className="space-y-2.5">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {(openMatches ?? []).map((m: any) => {
+            {(openMatches ?? []).map((m) => {
               const playerCount = m.match_participants?.length ?? 0;
               return (
                 <Link
@@ -258,8 +283,7 @@ export default async function AccueilPage() {
 
         {groups.length > 0 ? (
           <div className="space-y-2">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {groups.map((g: any) => (
+            {groups.map((g) => (
               <Link
                 key={g.id}
                 href={`/groupes/${g.id}`}
