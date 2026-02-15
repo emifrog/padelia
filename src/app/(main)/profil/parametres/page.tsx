@@ -194,8 +194,9 @@ export default function ParametresPage() {
 
       {/* App info */}
       <div className="pb-8 text-center">
-        <p className="text-[11px] text-gray-300">Padelia v0.1.0</p>
+        <p className="text-[11px] text-gray-300">Padelia v1.0.0</p>
         <p className="text-[11px] text-gray-300">Made with 🎾 for padel players</p>
+        <p className="text-[11px] text-gray-300">Made by XRWeb</p>
       </div>
     </div>
   );

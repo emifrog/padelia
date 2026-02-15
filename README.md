@@ -246,4 +246,4 @@ Le projet utilise Next.js App Router avec deux groupes de routes :
 
 ## Licence
 
-Projet prive. Tous droits reserves.
+Projet prive. Tous droits reserves. XRWeb
