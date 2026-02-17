@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { LEVEL_LABELS, SIDE_LABELS, STYLE_LABELS } from '@/types';
 import type { PlayerLevel, PlayingSide, PlayStyle } from '@/types';
-import { Calendar, ChevronRight, Pencil, Bell, Settings, Star, Crown } from 'lucide-react';
+import { BarChart3, Calendar, CalendarCheck, ChevronRight, Pencil, Bell, Settings, Star, Crown, Users } from 'lucide-react';
 import Image from 'next/image';
 import LogoutButton from '@/components/layout/LogoutButton';
 
@@ -122,6 +122,9 @@ export default async function ProfilPage() {
       <div className="divide-y divide-gray-100">
         {[
           { label: 'Modifier mon profil', icon: Pencil, href: '/profil/edit' },
+          { label: 'Mes stats', icon: BarChart3, href: '/stats' },
+          { label: 'Mes réservations', icon: CalendarCheck, href: '/profil/reservations' },
+          { label: 'Rechercher des joueurs', icon: Users, href: '/joueurs' },
           { label: 'Mes disponibilités', icon: Calendar, href: '/profil/disponibilites', subtitle: availabilityCount > 0 ? `${availabilityCount} créneau${availabilityCount > 1 ? 'x' : ''}` : undefined },
           { label: 'Notifications', icon: Bell, href: '/profil/notifications' },
           { label: 'Abonnement', icon: Star, href: '/profil/abonnement' },

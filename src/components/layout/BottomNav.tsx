@@ -3,13 +3,13 @@
 import { memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Swords, Users, BarChart3, User } from 'lucide-react';
+import { Home, Swords, Map, MessageCircle, User } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/accueil', label: 'Accueil', icon: Home },
   { href: '/matchs', label: 'Matchs', icon: Swords },
-  { href: '/joueurs', label: 'Joueurs', icon: Users },
-  { href: '/stats', label: 'Stats', icon: BarChart3 },
+  { href: '/carte', label: 'Carte', icon: Map },
+  { href: '/chat', label: 'Chat', icon: MessageCircle },
   { href: '/profil', label: 'Profil', icon: User },
 ] as const;
 
