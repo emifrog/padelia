@@ -70,12 +70,11 @@ export async function POST(request: NextRequest) {
 
         // Handle subscription payment
         if (userId && session.subscription) {
-          const subResponse = await stripeClient.subscriptions.retrieve(
+          const sub = await stripeClient.subscriptions.retrieve(
             session.subscription as string,
+            { expand: ['items'] },
           );
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const sub = subResponse as any;
-          const periodEnd = sub.current_period_end ?? sub.data?.current_period_end;
+          const periodEnd = sub.items.data[0]?.current_period_end ?? null;
 
           await supabase
             .from('profiles')
@@ -92,8 +91,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'charge.refunded': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const charge = event.data.object as any;
+        const charge = event.data.object as Stripe.Charge;
         const paymentIntentId = charge.payment_intent as string;
         if (paymentIntentId) {
           await supabase
@@ -106,12 +104,11 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.updated': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const subscription = event.data.object as any;
+        const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
 
         const isActive = ['active', 'trialing'].includes(subscription.status);
-        const periodEnd = subscription.current_period_end;
+        const periodEnd = subscription.items?.data?.[0]?.current_period_end ?? null;
 
         const { data: profile } = await supabase
           .from('profiles')
@@ -134,8 +131,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.deleted': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const subscription = event.data.object as any;
+        const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
 
         const { data: profile } = await supabase

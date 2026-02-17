@@ -103,6 +103,8 @@ export default function AvailabilityGrid({ clubId, courtId, date, hourlyRate, op
               key={slot.time}
               type="button"
               disabled={disabled}
+              aria-pressed={isSelected}
+              aria-label={`Creneau ${slot.label}${booked ? ', reserve' : ''}${past ? ', passe' : ''}`}
               onClick={() => handleSelect(slot)}
               className={`rounded-lg px-2 py-2.5 text-[13px] font-medium transition-all ${
                 disabled

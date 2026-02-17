@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getStripe } from '@/lib/stripe/config';
+import { applyRateLimit, getRateLimitId } from '@/lib/api-utils';
+import { RATE_LIMITS } from '@/lib/rate-limit';
 
 function getAdmin() {
   return createAdminClient(
@@ -17,6 +19,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
+
+    const rateLimited = applyRateLimit(getRateLimitId(request, user.id), RATE_LIMITS.mutation, 'booking:cancel');
+    if (rateLimited) return rateLimited;
 
     const { booking_id } = await request.json() as { booking_id: string };
     if (!booking_id) {

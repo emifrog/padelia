@@ -3,6 +3,15 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getStripe } from '@/lib/stripe/config';
 import { createBookingSchema } from '@/lib/validations/club';
+import { applyRateLimit, getRateLimitId } from '@/lib/api-utils';
+import { RATE_LIMITS } from '@/lib/rate-limit';
+
+interface JoinedClub {
+  id: string;
+  name: string;
+  status: string;
+  opening_hours: unknown;
+}
 
 function getAdmin() {
   return createAdminClient(
@@ -18,6 +27,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
+
+    const rateLimited = applyRateLimit(getRateLimitId(request, user.id), RATE_LIMITS.mutation, 'booking:create');
+    if (rateLimited) return rateLimited;
 
     const body = await request.json();
     const parsed = createBookingSchema.safeParse(body);
@@ -42,8 +54,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Terrain non disponible' }, { status: 404 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const club = Array.isArray(court.clubs) ? court.clubs[0] : court.clubs as any;
+    const clubData = court.clubs as unknown as JoinedClub | JoinedClub[] | null;
+    const club = Array.isArray(clubData) ? clubData[0] : clubData;
     if (!club || club.status !== 'active') {
       return NextResponse.json({ error: 'Club non actif' }, { status: 404 });
     }

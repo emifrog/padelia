@@ -41,6 +41,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Écrire un message..."
+        aria-label="Écrire un message"
         disabled={disabled}
         rows={1}
         className="max-h-24 min-h-[40px] flex-1 resize-none rounded-xl border bg-muted px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -50,8 +51,9 @@ export default function ChatInput({ onSend, disabled }: Props) {
         onClick={handleSend}
         disabled={!value.trim() || sending || disabled}
         className="h-10 w-10 shrink-0 rounded-full"
+        aria-label="Envoyer le message"
       >
-        <Send className="h-4 w-4" />
+        <Send className="h-4 w-4" aria-hidden="true" />
       </Button>
     </div>
   );

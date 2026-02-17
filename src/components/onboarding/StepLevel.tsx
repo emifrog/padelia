@@ -68,13 +68,17 @@ export default function StepLevel({ data, onChange }: Props) {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm text-gray-300">
+        <label htmlFor="years-playing" className="text-sm text-gray-300">
           Années de pratique : <span className="font-semibold text-white">{data.years_playing ?? 0} an{(data.years_playing ?? 0) > 1 ? 's' : ''}</span>
         </label>
         <input
+          id="years-playing"
           type="range"
           min={0}
           max={20}
+          aria-valuemin={0}
+          aria-valuemax={20}
+          aria-valuenow={data.years_playing ?? 0}
           value={data.years_playing ?? 0}
           onChange={(e) => onChange({ years_playing: Number(e.target.value) })}
           className="w-full accent-green-padel"

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { peerFeedbackSchema } from '@/lib/validations/match';
+import { applyRateLimit, getRateLimitId } from '@/lib/api-utils';
+import { RATE_LIMITS } from '@/lib/rate-limit';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -34,6 +36,9 @@ export async function POST(request: Request, context: RouteContext) {
   if (!user) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
   }
+
+  const rateLimited = applyRateLimit(getRateLimitId(request, user.id), RATE_LIMITS.mutation, 'match:feedback');
+  if (rateLimited) return rateLimited;
 
   // Verify match is completed and user is a participant
   const { data: participant } = await supabase

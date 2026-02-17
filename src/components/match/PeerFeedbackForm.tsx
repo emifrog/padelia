@@ -98,15 +98,19 @@ export default function PeerFeedbackForm({ matchId, participants, currentUserId 
           <p className="text-sm font-semibold text-navy">{player.full_name}</p>
 
           {/* Star rating */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1" role="radiogroup" aria-label={`Note pour ${player.full_name}`}>
             {[1, 2, 3, 4, 5].map((star) => (
               <button
                 key={star}
                 type="button"
+                role="radio"
+                aria-checked={(ratings[player.player_id] ?? 0) === star}
+                aria-label={`${star} etoile${star > 1 ? 's' : ''}`}
                 onClick={() => setRatings((prev) => ({ ...prev, [player.player_id]: star }))}
                 className="transition-transform active:scale-90"
               >
                 <Star
+                  aria-hidden="true"
                   className={`h-7 w-7 ${
                     (ratings[player.player_id] ?? 0) >= star
                       ? 'fill-amber-400 text-amber-400'
@@ -122,17 +126,21 @@ export default function PeerFeedbackForm({ matchId, participants, currentUserId 
 
           {/* Optional level feedback slider */}
           <div className="space-y-1">
-            <label className="text-xs text-gray-400">
+            <label htmlFor={`level-${player.player_id}`} className="text-xs text-gray-400">
               Niveau estimé (optionnel) :{' '}
               <span className="font-semibold text-navy">
                 {levelFeedbacks[player.player_id]?.toFixed(1) ?? '—'}
               </span>
             </label>
             <input
+              id={`level-${player.player_id}`}
               type="range"
               min={1}
               max={10}
               step={0.5}
+              aria-valuemin={1}
+              aria-valuemax={10}
+              aria-valuenow={levelFeedbacks[player.player_id] ?? 5}
               value={levelFeedbacks[player.player_id] ?? 5}
               onChange={(e) =>
                 setLevelFeedbacks((prev) => ({

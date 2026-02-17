@@ -11,10 +11,11 @@ export default function StarRating({ rating, size = 'sm' }: Props) {
   const px = size === 'sm' ? 'h-3.5 w-3.5' : 'h-5 w-5';
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-0.5" role="img" aria-label={`Note : ${rating.toFixed(1)} sur 5`}>
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
+          aria-hidden="true"
           className={`${px} ${
             i < Math.round(rating)
               ? 'fill-amber-400 text-amber-400'

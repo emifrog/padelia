@@ -31,6 +31,18 @@ interface PlayerMarker {
 
 const DEFAULT_LOCATION = { lat: 48.8566, lng: 2.3522 }; // Paris
 
+/**
+ * Escape HTML special characters to prevent XSS in Mapbox popups.
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export default function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -156,11 +168,11 @@ export default function MapView() {
 
         const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
           <div style="font-family:system-ui;padding:4px;">
-            <p style="font-weight:700;font-size:14px;margin:0 0 4px;">${club.name}</p>
-            <p style="font-size:12px;color:#666;margin:0 0 2px;">${club.address}</p>
-            <p style="font-size:12px;color:#666;margin:0 0 4px;">${club.city}</p>
+            <p style="font-weight:700;font-size:14px;margin:0 0 4px;">${escapeHtml(club.name)}</p>
+            <p style="font-size:12px;color:#666;margin:0 0 2px;">${escapeHtml(club.address)}</p>
+            <p style="font-size:12px;color:#666;margin:0 0 4px;">${escapeHtml(club.city)}</p>
             ${stars}
-            <a href="/clubs/${club.id}" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:#3EAF4B;text-decoration:none;">Voir le club →</a>
+            <a href="/clubs/${encodeURIComponent(club.id)}" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:#3EAF4B;text-decoration:none;">Voir le club →</a>
           </div>
         `);
 
@@ -193,17 +205,17 @@ export default function MapView() {
             border: 2px solid white;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             cursor: pointer;
-          ">${player.full_name.charAt(0).toUpperCase()}</div>
+          ">${escapeHtml(player.full_name.charAt(0).toUpperCase())}</div>
         `;
 
         const levelLabel = LEVEL_LABELS[player.level] ?? player.level;
         const popup = new mapboxgl.Popup({ offset: 20 }).setHTML(`
           <div style="font-family:system-ui;padding:4px;">
-            <p style="font-weight:700;font-size:14px;margin:0 0 2px;">${player.full_name}</p>
-            <p style="font-size:12px;color:#666;margin:0;">@${player.username}</p>
+            <p style="font-weight:700;font-size:14px;margin:0 0 2px;">${escapeHtml(player.full_name)}</p>
+            <p style="font-size:12px;color:#666;margin:0;">@${escapeHtml(player.username)}</p>
             <p style="font-size:12px;margin:4px 0 0;">
               <span style="background:#3EAF4B22;color:#3EAF4B;padding:2px 6px;border-radius:99px;font-size:11px;font-weight:600;">
-                ${levelLabel}
+                ${escapeHtml(levelLabel)}
               </span>
             </p>
           </div>

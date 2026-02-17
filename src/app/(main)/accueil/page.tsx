@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { MatchStatus, MatchType, TournamentStatus, TournamentFormat } from '@/types';
 import { Clock, MapPin, ChevronRight, Users, Star, Loader2, Trophy } from 'lucide-react';
 import SuggestionsSection from '@/components/accueil/SuggestionsSection';
@@ -353,7 +354,7 @@ export default async function AccueilPage() {
               >
                 <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-green-subtle text-[22px]">
                   {c.logo_url ? (
-                    <img src={c.logo_url} alt={c.name} className="h-11 w-11 rounded-lg object-cover" />
+                    <Image src={c.logo_url} alt={c.name} width={44} height={44} className="h-11 w-11 rounded-lg object-cover" />
                   ) : (
                     '🏟️'
                   )}

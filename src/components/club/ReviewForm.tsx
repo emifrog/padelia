@@ -98,17 +98,21 @@ export default function ReviewForm({ clubId }: Props) {
       <h4 className="mb-3 text-[14px] font-bold text-navy">Laisser un avis</h4>
 
       {/* Star rating */}
-      <div className="mb-3 flex items-center gap-1">
+      <div className="mb-3 flex items-center gap-1" role="radiogroup" aria-label="Note du club">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
             type="button"
+            role="radio"
+            aria-checked={currentRating === star}
+            aria-label={`${star} etoile${star > 1 ? 's' : ''}`}
             onMouseEnter={() => setHoveredStar(star)}
             onMouseLeave={() => setHoveredStar(0)}
             onClick={() => setValue('rating', star, { shouldValidate: true })}
             className="p-0.5"
           >
             <Star
+              aria-hidden="true"
               className={`h-7 w-7 ${
                 star <= (hoveredStar || currentRating)
                   ? 'fill-amber-400 text-amber-400'

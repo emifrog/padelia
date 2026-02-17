@@ -3,19 +3,46 @@ import { createClient } from '@/lib/supabase/server';
 import { calculateEloChanges, type EloPlayer, type MatchResult } from '@/lib/ranking';
 import { calculateReliability } from '@/lib/ranking';
 import { triggerMatchCompleted } from '@/lib/notifications/triggers';
+import { applyRateLimit, getRateLimitId } from '@/lib/api-utils';
+import { RATE_LIMITS } from '@/lib/rate-limit';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
+}
+
+interface ParticipantProfile {
+  level_score: number | null;
+  total_matches: number | null;
+  wins: number | null;
+  losses: number | null;
+  reliability_score: number | null;
+}
+
+interface ParticipantWithProfile {
+  player_id: string;
+  team: 'A' | 'B' | null;
+  status: string;
+  profiles: ParticipantProfile | ParticipantProfile[] | null;
 }
 
 /**
  * POST /api/matches/[id]/complete
  * Triggered after match result is saved.
  * Calculates ELO changes, updates player_stats, and updates profiles.
+ * Only the match organizer can call this endpoint.
  */
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const { id: matchId } = await context.params;
   const supabase = await createClient();
+
+  // Auth check
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Non authentifie' }, { status: 401 });
+  }
+
+  const rateLimited = applyRateLimit(getRateLimitId(request, user.id), RATE_LIMITS.mutation, 'match:complete');
+  if (rateLimited) return rateLimited;
 
   // 1. Get match with scores
   const { data: match, error: matchError } = await supabase
@@ -27,6 +54,11 @@ export async function POST(_request: Request, context: RouteContext) {
 
   if (matchError || !match) {
     return NextResponse.json({ error: 'Match not found or not completed' }, { status: 404 });
+  }
+
+  // Verify caller is the match organizer
+  if (match.organizer_id !== user.id) {
+    return NextResponse.json({ error: 'Seul l\'organisateur peut valider le resultat' }, { status: 403 });
   }
 
   if (!match.winner_team || !match.score_team_a || !match.score_team_b) {
@@ -51,8 +83,16 @@ export async function POST(_request: Request, context: RouteContext) {
     .eq('match_id', matchId)
     .eq('status', 'confirmed');
 
-  if (!participants || participants.length === 0) {
+  const typedParticipants = (participants ?? []) as unknown as ParticipantWithProfile[];
+
+  if (typedParticipants.length === 0) {
     return NextResponse.json({ error: 'No participants' }, { status: 400 });
+  }
+
+  // Helper to extract profile from Supabase join (can be array or single object)
+  function getProfile(p: ParticipantWithProfile): ParticipantProfile | null {
+    if (!p.profiles) return null;
+    return Array.isArray(p.profiles) ? p.profiles[0] ?? null : p.profiles;
   }
 
   // 3. Parse scores into sets
@@ -69,9 +109,8 @@ export async function POST(_request: Request, context: RouteContext) {
   };
 
   // 4. Build ELO players
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const eloPlayers: EloPlayer[] = participants.map((p: any) => {
-    const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+  const eloPlayers: EloPlayer[] = typedParticipants.map((p) => {
+    const profile = getProfile(p);
     return {
       id: p.player_id,
       level_score: profile?.level_score ?? 3.0,
@@ -85,12 +124,8 @@ export async function POST(_request: Request, context: RouteContext) {
 
   // 6. Update each player
   for (const result of eloResults) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const participant = participants.find((p: any) => p.player_id === result.player_id);
-    const profile = participant
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ? (Array.isArray((participant as any).profiles) ? (participant as any).profiles[0] : (participant as any).profiles)
-      : null;
+    const participant = typedParticipants.find((p) => p.player_id === result.player_id);
+    const profile = participant ? getProfile(participant) : null;
 
     const isWinner = participant?.team === match.winner_team;
     const currentWins = profile?.wins ?? 0;
@@ -135,8 +170,7 @@ export async function POST(_request: Request, context: RouteContext) {
     const totalSetsLost = sets.length - totalSetsWon;
 
     // Find partner
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const partner = participants.find((p: any) =>
+    const partner = typedParticipants.find((p) =>
       p.player_id !== result.player_id && p.team === participant?.team,
     );
 

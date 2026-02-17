@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getStripe } from '@/lib/stripe/config';
 import { registerTeamSchema } from '@/lib/validations/tournament';
+import { applyRateLimit, getRateLimitId } from '@/lib/api-utils';
+import { RATE_LIMITS } from '@/lib/rate-limit';
 
 function getAdmin() {
   return createAdminClient(
@@ -24,6 +26,9 @@ export async function POST(
     if (!user) {
       return NextResponse.json({ error: 'Non authentifie' }, { status: 401 });
     }
+
+    const rateLimited = applyRateLimit(getRateLimitId(request, user.id), RATE_LIMITS.mutation, 'tournament:register');
+    if (rateLimited) return rateLimited;
 
     const body = await request.json();
     const parsed = registerTeamSchema.safeParse(body);
