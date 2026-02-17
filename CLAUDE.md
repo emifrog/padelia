@@ -146,16 +146,11 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 | Dashboard club | FAIT | Stats (revenue, remplissage, bookings, rating), timeline jour, vue semaine |
 | Mes reservations | FAIT | `/profil/reservations` a venir/passees, annulation avec hook |
 | Tournois & Competition | FAIT | CRUD, inscription duo + Stripe, bracket eliminatoire, saisie scores, avancement auto |
-
-### Fonctionnalites PARTIELLEMENT implementees
-| Module | Statut | Manque |
-|--------|--------|-------|
-| Tests E2E (Playwright) | PARTIEL | Setup manquant, flows auth/match/chat a ecrire |
+| Tests E2E (Playwright) | FAIT | 113 tests : auth, match, chat, booking, tournoi, navigation, PWA (chromium + mobile) |
 
 ### Fonctionnalites MANQUANTES
 | Module | Priorite | Effort estime |
 |--------|----------|--------------|
-| Tests E2E (Playwright) | MOYENNE | 1 semaine |
 | Page offline (PWA fallback) | BASSE | 2 jours |
 | Images dans le chat | BASSE | 1 semaine |
 
@@ -178,10 +173,16 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
   - `reliability.test.ts` (15 tests : events, bornes, precision)
   - `schemas.test.ts` (56 tests : 5 schemas Zod, valid/invalid/boundary)
   - Setup : `vitest.config.ts`, `src/__tests__/setup.ts`, scripts npm
-- [ ] **Tests E2E (Playwright)** — Reporte Phase 6+
-  - Flow auth complet (register -> onboarding -> accueil)
-  - Flow match (creer -> rejoindre -> scorer -> stats)
-  - Flow chat (nouvelle conversation -> envoyer message)
+- [x] **Tests E2E (Playwright)** — 113 tests, 7 fichiers spec
+  - `auth.spec.ts` : login, register, onboarding, redirects auth/unauth (12 tests)
+  - `match.spec.ts` : CRUD match, detail, cancel, navigation (8 tests)
+  - `chat.spec.ts` : conversations, new conversation sheet, send message (7 tests)
+  - `booking.spec.ts` : clubs directory, detail, booking flow steps, reservations (7 tests)
+  - `tournament.spec.ts` : CRUD tournoi, tabs, registration flow, pagination (11 tests)
+  - `navigation.spec.ts` : bottom nav, all sections, 404, PWA manifest/SW (12 tests)
+  - Setup : `playwright.config.ts`, `global-setup.ts` (auth storage state), `helpers.ts`
+  - 2 projets : chromium (desktop) + mobile (iPhone 14)
+  - Scripts : `test:e2e`, `test:e2e:ui`, `test:e2e:headed`, `test:e2e:debug`
 - [x] **Pagination "Charger plus"**
   - Matchs : cursor `scheduled_at`, 15 par page (`MatchListClient.tsx`)
   - Joueurs : `visibleCount` state, 10 par page
@@ -334,6 +335,6 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 ---
 
 ## Priorites immediates (prochaine session)
-1. Tests E2E Playwright sur les flows critiques (auth, match, chat, booking, tournoi)
+1. Engagement & Retention (Phase 8) — notifications intelligentes, gamification, ameliorations chat
 2. Photos club (Supabase Storage) et moderation avis
-3. Engagement & Retention (Phase 8) — notifications intelligentes, gamification, ameliorations chat
+3. Distribution & Croissance (Phase 9) — SEO, landing, analytics, i18n
