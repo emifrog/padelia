@@ -369,3 +369,111 @@ export async function triggerMatchReminder(matchId: string) {
     });
   }
 }
+
+// ── Tournament Notifications ──
+
+/**
+ * Notify all tournament participants of an update
+ */
+export async function triggerTournamentUpdate(tournamentId: string, message: string) {
+  const supabase = getAdminClient();
+
+  const { data: tournament } = await supabase
+    .from('tournaments')
+    .select('name')
+    .eq('id', tournamentId)
+    .single();
+
+  // Get all players from non-withdrawn teams
+  const { data: teams } = await supabase
+    .from('tournament_teams')
+    .select('player_ids')
+    .eq('tournament_id', tournamentId)
+    .is('withdrawn_at', null);
+
+  if (!teams?.length) return;
+
+  const allPlayerIds = [...new Set(teams.flatMap((t) => t.player_ids ?? []))];
+  if (!allPlayerIds.length) return;
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, push_token, email, notification_preferences')
+    .in('id', allPlayerIds);
+
+  if (!profiles?.length) return;
+
+  const payload: PushPayload = {
+    title: tournament?.name ?? 'Tournoi',
+    body: message,
+    url: `/tournois/${tournamentId}`,
+    tag: `tournament-update-${tournamentId}`,
+  };
+
+  await sendPushToUsers(profiles as NotificationTarget[], payload, 'push_match_update', 'tournament_update');
+}
+
+/**
+ * Notify a team about their next match in the tournament
+ */
+export async function triggerTournamentNextMatch(tournamentId: string, teamPlayerIds: string[]) {
+  const supabase = getAdminClient();
+
+  const { data: tournament } = await supabase
+    .from('tournaments')
+    .select('name')
+    .eq('id', tournamentId)
+    .single();
+
+  if (!teamPlayerIds.length) return;
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, push_token, email, notification_preferences')
+    .in('id', teamPlayerIds);
+
+  if (!profiles?.length) return;
+
+  const payload: PushPayload = {
+    title: 'Prochain match !',
+    body: `Votre equipe avance au tour suivant dans "${tournament?.name ?? 'le tournoi'}"`,
+    url: `/tournois/${tournamentId}`,
+    tag: `tournament-next-${tournamentId}`,
+  };
+
+  await sendPushToUsers(profiles as NotificationTarget[], payload, 'push_match_update', 'tournament_reminder');
+}
+
+/**
+ * Notify a partner that they've been registered for a tournament
+ */
+export async function triggerTournamentRegistration(
+  tournamentId: string,
+  partnerId: string,
+  captainName: string,
+) {
+  const supabase = getAdminClient();
+
+  const { data: tournament } = await supabase
+    .from('tournaments')
+    .select('name')
+    .eq('id', tournamentId)
+    .single();
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, push_token, email, notification_preferences')
+    .eq('id', partnerId)
+    .single();
+
+  if (!profile) return;
+
+  const payload: PushPayload = {
+    title: 'Inscription tournoi',
+    body: `${captainName} t'a inscrit au tournoi "${tournament?.name ?? 'un tournoi'}"`,
+    url: `/tournois/${tournamentId}`,
+    tag: `tournament-register-${tournamentId}`,
+  };
+
+  await sendPushToUsers([profile as NotificationTarget], payload, 'push_match_update', 'tournament_update');
+}

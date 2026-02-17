@@ -2,8 +2,8 @@ import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import type { MatchStatus, MatchType } from '@/types';
-import { Clock, MapPin, ChevronRight, Users, Star, Loader2 } from 'lucide-react';
+import type { MatchStatus, MatchType, TournamentStatus, TournamentFormat } from '@/types';
+import { Clock, MapPin, ChevronRight, Users, Star, Loader2, Trophy } from 'lucide-react';
 import SuggestionsSection from '@/components/accueil/SuggestionsSection';
 import FabButton from '@/components/accueil/FabButton';
 
@@ -59,6 +59,7 @@ export default async function AccueilPage() {
     { data: openMatches },
     { data: myGroups },
     { data: nearbyClubs },
+    { data: upcomingTournaments },
   ] = await Promise.all([
     supabase
       .from('match_participants')
@@ -91,6 +92,12 @@ export default async function AccueilPage() {
       .select('id, name, city, rating, total_reviews, logo_url')
       .eq('status', 'active')
       .order('rating', { ascending: false })
+      .limit(3),
+    supabase
+      .from('tournaments')
+      .select('id, name, status, format, starts_at, max_teams, team_count, entry_fee, location_name')
+      .in('status', ['registration_open', 'in_progress'])
+      .order('starts_at', { ascending: true })
       .limit(3),
   ]);
 
@@ -282,6 +289,49 @@ export default async function AccueilPage() {
           <SuggestionsSection />
         </Suspense>
       </section>
+
+      {/* ── Tournois ── */}
+      {(upcomingTournaments ?? []).length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-[17px] font-bold text-navy">
+              <span className="mr-1.5">🏆</span>Tournois
+            </h2>
+            <Link href="/tournois" className="text-[13px] font-semibold text-green-padel">
+              Voir tout
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {(upcomingTournaments ?? []).map((t: { id: string; name: string; status: TournamentStatus; format: TournamentFormat; starts_at: string; max_teams: number; team_count: number; entry_fee: number; location_name: string | null }) => (
+              <Link
+                key={t.id}
+                href={`/tournois/${t.id}`}
+                className="flex items-center gap-3 rounded-xl bg-white p-3.5 shadow-padel"
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+                  <Trophy className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14px] font-bold text-navy">{t.name}</p>
+                  <p className="text-[12px] text-gray-400">
+                    {new Date(t.starts_at).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                    {t.location_name && ` · ${t.location_name}`}
+                    {' · '}{t.team_count}/{t.max_teams} equipes
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[13px] font-bold text-green-padel">
+                    {Number(t.entry_fee) > 0 ? `${t.entry_fee}EUR` : 'Gratuit'}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Clubs à proximité ── */}
       {(nearbyClubs ?? []).length > 0 && (

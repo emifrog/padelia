@@ -13,7 +13,7 @@ export type MatchVisibility = 'public' | 'group' | 'private';
 export type ParticipantStatus = 'invited' | 'confirmed' | 'declined' | 'cancelled' | 'no_show';
 export type ParticipantRole = 'organizer' | 'player' | 'substitute';
 export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed';
-export type NotificationType = 'match_invite' | 'match_update' | 'match_reminder' | 'chat_message' | 'group_invite' | 'payment_request' | 'level_update' | 'system';
+export type NotificationType = 'match_invite' | 'match_update' | 'match_reminder' | 'chat_message' | 'group_invite' | 'payment_request' | 'level_update' | 'system' | 'tournament_update' | 'tournament_reminder';
 
 // Database row types
 export interface Profile {
@@ -208,3 +208,80 @@ export interface ClubReview {
   comment: string | null;
   created_at: string;
 }
+
+// ============================================================
+// Tournaments
+// ============================================================
+
+export type TournamentStatus = 'draft' | 'registration_open' | 'registration_closed' | 'in_progress' | 'completed' | 'cancelled';
+export type TournamentFormat = 'single_elimination' | 'round_robin';
+export type BracketMatchStatus = 'pending' | 'scheduled' | 'in_progress' | 'completed' | 'bye';
+
+export interface Tournament {
+  id: string;
+  organizer_id: string;
+  club_id: string | null;
+  name: string;
+  description: string | null;
+  format: TournamentFormat;
+  status: TournamentStatus;
+  max_teams: number;
+  team_count: number;
+  entry_fee: number;
+  prize_description: string | null;
+  min_level: PlayerLevel | null;
+  max_level: PlayerLevel | null;
+  registration_deadline: string | null;
+  starts_at: string;
+  ends_at: string | null;
+  location_name: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  rules: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TournamentTeam {
+  id: string;
+  tournament_id: string;
+  name: string;
+  player_ids: string[];
+  captain_id: string;
+  seed: number | null;
+  payment_status: PaymentStatus;
+  stripe_checkout_session_id: string | null;
+  registered_at: string;
+  withdrawn_at: string | null;
+}
+
+export interface TournamentBracket {
+  id: string;
+  tournament_id: string;
+  round: number;
+  position: number;
+  team_a_id: string | null;
+  team_b_id: string | null;
+  score_a: string | null;
+  score_b: string | null;
+  winner_team_id: string | null;
+  status: BracketMatchStatus;
+  scheduled_at: string | null;
+  court_id: string | null;
+  next_bracket_id: string | null;
+  created_at: string;
+}
+
+export const TOURNAMENT_STATUS_LABELS: Record<TournamentStatus, string> = {
+  draft: 'Brouillon',
+  registration_open: 'Inscriptions ouvertes',
+  registration_closed: 'Inscriptions fermees',
+  in_progress: 'En cours',
+  completed: 'Termine',
+  cancelled: 'Annule',
+};
+
+export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
+  single_elimination: 'Elimination directe',
+  round_robin: 'Poules',
+};

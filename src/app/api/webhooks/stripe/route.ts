@@ -56,6 +56,18 @@ export async function POST(request: NextRequest) {
           break;
         }
 
+        // Handle tournament registration payment
+        if (session.metadata?.type === 'tournament_registration') {
+          const teamId = session.metadata.team_id;
+          if (teamId) {
+            await supabase
+              .from('tournament_teams')
+              .update({ payment_status: 'paid' })
+              .eq('id', teamId);
+          }
+          break;
+        }
+
         // Handle subscription payment
         if (userId && session.subscription) {
           const subResponse = await stripeClient.subscriptions.retrieve(

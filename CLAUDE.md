@@ -43,6 +43,7 @@ src/
 │   ├── chat/               # ChatWindow, MessageBubble
 │   ├── map/                # MapView, ClubMarker
 │   ├── stats/              # Charts, ProgressionGraph
+│   ├── tournament/         # TournamentCard, BracketView, BracketMatch, TeamList
 │   ├── layout/             # Header, BottomNav, PushPermission, GeolocationPermission
 │   └── providers/          # QueryProvider (TanStack Query)
 ├── lib/
@@ -50,6 +51,7 @@ src/
 │   ├── stripe/             # Config Stripe
 │   ├── matching/           # Algorithme de matching
 │   ├── ranking/            # Systeme de classement (ELO + reliability)
+│   ├── tournament/         # Bracket generator (single elimination)
 │   ├── notifications/      # Push + Email (Resend)
 │   └── utils/              # Helpers
 ├── hooks/                  # Custom React hooks (use-player-suggestions, use-chat-realtime)
@@ -71,15 +73,15 @@ src/
 - **Performance** : React.memo sur composants listes, TanStack Query pour cache, Promise.all pour queries paralleles, pas de N+1
 
 ## Base de Donnees (resume)
-14 tables : profiles, clubs, courts, groups, group_members, matches, match_participants, bookings, conversations, conversation_members, messages, notifications, player_stats, club_reviews
+17 tables : profiles, clubs, courts, groups, group_members, matches, match_participants, bookings, conversations, conversation_members, messages, notifications, player_stats, club_reviews, tournaments, tournament_teams, tournament_brackets
 
-**Enums cles** : player_level (6 niveaux), playing_side, play_style, match_status, participant_status, payment_status, notification_type
+**Enums cles** : player_level (6 niveaux), playing_side, play_style, match_status, participant_status, payment_status, notification_type, tournament_status, tournament_format, bracket_match_status
 
-**Fonctions SQL** : haversine_distance(), find_nearby_players()
+**Fonctions SQL** : haversine_distance(), find_nearby_players(), update_tournament_team_count()
 
-**RLS** active sur toutes les tables. Triggers pour : updated_at auto, creation profil auto, mise a jour conversation, compteur membres groupe.
+**RLS** active sur toutes les tables. Triggers pour : updated_at auto, creation profil auto, mise a jour conversation, compteur membres groupe, compteur equipes tournoi.
 
-Schema complet dans `supabase/schema.sql`
+Schema complet dans `supabase/schema.sql` + migration `supabase/migrations/20260217_add_tournaments.sql`
 
 ## Algorithme de Matching
 Score composite sur 100 points :
@@ -132,17 +134,18 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 | Paiements Stripe | FAIT | Checkout, webhooks, abonnement premium, paiement reservation |
 | PWA | FAIT | Service Worker, manifest, install prompt |
 | Geolocalisation | FAIT | Permission prompt, sauvegarde coords profil |
-| Notifications auto-triggers | FAIT | Join/leave/cancel match, groupe, chat (debounce 30s), match completed |
+| Notifications auto-triggers | FAIT | Join/leave/cancel match, groupe, chat (debounce 30s), match completed, tournoi |
 | Notifications email | FAIT | Templates Resend (bienvenue, match termine), lazy-init |
 | Rappel match (cron) | FAIT | Vercel Cron 1x/jour 8h UTC (Hobby plan), push + email 75min avant |
-| Tests unitaires (Vitest) | FAIT | 105 tests : matching, ELO, reliability, Zod schemas |
-| Pagination "Charger plus" | FAIT | Matchs, joueurs, stats, chat (cursor-based) |
+| Tests unitaires (Vitest) | FAIT | 142 tests : matching, ELO, reliability, Zod schemas, bracket generator |
+| Pagination "Charger plus" | FAIT | Matchs, joueurs, stats, chat, tournois (cursor-based) |
 | Peer feedback post-match | FAIT | Etoiles 1-5, slider niveau, blend 70/30 dans level_score |
 | Annuaire clubs | FAIT | `/clubs` annuaire recherche ville/nom/rating, `/clubs/[id]` detail, carte lien popup |
 | Systeme d'avis clubs | FAIT | Formulaire note 1-5 + commentaire, recalcul moyenne, liste paginee |
 | Reservation terrains | FAIT | Grille dispo, flow 4 etapes, Stripe Checkout, annulation >24h remboursement |
 | Dashboard club | FAIT | Stats (revenue, remplissage, bookings, rating), timeline jour, vue semaine |
 | Mes reservations | FAIT | `/profil/reservations` a venir/passees, annulation avec hook |
+| Tournois & Competition | FAIT | CRUD, inscription duo + Stripe, bracket eliminatoire, saisie scores, avancement auto |
 
 ### Fonctionnalites PARTIELLEMENT implementees
 | Module | Statut | Manque |
@@ -152,7 +155,6 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 ### Fonctionnalites MANQUANTES
 | Module | Priorite | Effort estime |
 |--------|----------|--------------|
-| Tournois | HAUTE | 2-3 semaines |
 | Tests E2E (Playwright) | MOYENNE | 1 semaine |
 | Page offline (PWA fallback) | BASSE | 2 jours |
 | Images dans le chat | BASSE | 1 semaine |
@@ -226,28 +228,41 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
   - DashboardWeekView : 7 jours scrollable, barres remplissage colorees
   - Fetch parallele : bookings jour/semaine/mois via Promise.all
 
-### PHASE 7 — Tournois & Competition (2-3 semaines)
+### PHASE 7 — Tournois & Competition ✅ TERMINEE
 > Ajouter la dimension competitive pour fideliser les joueurs.
 
-- [ ] **Schema tournois**
-  - Nouvelle table `tournaments` (nom, type, format, dates, club, max_teams)
-  - Table `tournament_teams` (equipes inscrites)
-  - Table `tournament_brackets` (arbre de competition)
-  - Migration Supabase + RLS
-- [ ] **CRUD tournois**
-  - `/tournois` : liste des tournois (a venir, en cours, passes)
-  - `/tournois/creer` : formulaire creation (club organise ou libre)
-  - `/tournois/[id]` : detail avec bracket, equipes, resultats
-- [ ] **Gestion brackets**
-  - Tirage au sort automatique
-  - Arbre eliminatoire (visualisation bracket)
-  - Saisie des scores par match
-  - Avancement automatique du vainqueur
-- [ ] **Inscriptions**
-  - Inscription en equipe de 2 (duo)
-  - Paiement inscription (Stripe)
-  - Liste d'attente si complet
-  - Notifications aux participants (prochains matchs, resultats)
+- [x] **Schema tournois**
+  - 3 enums : `tournament_status`, `tournament_format`, `bracket_match_status`
+  - 3 tables : `tournaments`, `tournament_teams`, `tournament_brackets`
+  - 6 indexes, 2 triggers (updated_at + team_count auto), 9 RLS policies
+  - Migration standalone : `supabase/migrations/20260217_add_tournaments.sql`
+  - Types TypeScript : Tournament, TournamentTeam, TournamentBracket + status/format types
+  - Constantes : `lib/constants/tournament.ts` (labels, couleurs, options)
+  - Validations Zod : `lib/validations/tournament.ts` (create, register, complete bracket)
+- [x] **CRUD tournois**
+  - `/tournois` : liste avec recherche nom/lieu, tabs (A venir / En cours / Termines), pagination cursor-based (12/page)
+  - `/tournois/creer` : formulaire RHF + Zod (name, format, max_teams, entry_fee, niveaux, dates, lieu, regles)
+  - `/tournois/[id]` : detail avec TournamentInfo, TeamList, BracketView, actions organisateur
+  - API status : transitions validees (draft→registration_open→registration_closed→in_progress→completed)
+  - Hook `use-tournament-actions.ts` : openRegistrations, closeRegistrations, generateBracket, cancelTournament, withdrawTeam
+  - Composants : TournamentCard (memo), TournamentListClient, TournamentInfo, TeamList
+  - Skeletons : TournoisSkeleton, TournamentDetailSkeleton
+- [x] **Gestion brackets**
+  - Algorithme single elimination : `lib/tournament/bracket-generator.ts` (fonctions pures, testables)
+  - nextPowerOf2, calculateTotalRounds, advanceWinner, generateSingleEliminationBracket, generateSeedOrder
+  - Byes pour top seeds, shuffle unseeded, two-pass insert (entries puis next_bracket_id)
+  - BracketView : visualisation CSS pure, scroll horizontal, colonnes par round, labels dynamiques
+  - BracketMatch : card avec equipes + scores, winner surligne, formulaire inline saisie score (organizer)
+  - API generate-bracket : organizer only, min 4 equipes, insert + status→in_progress
+  - API complete bracket match : score + winner, avancement auto, detection finale→completed
+  - 37 tests unitaires (Vitest) : bracket-generator.test.ts
+- [x] **Inscriptions**
+  - `/tournois/[id]/inscrire` : flow 3 etapes (nom equipe → choisir partenaire → confirmation)
+  - API register : validation Zod, checks (status, capacite, captain unique, niveaux), Stripe Checkout si payant
+  - API withdraw : refund Stripe si deadline pas passee, set withdrawn_at, decrement team_count
+  - Webhook Stripe : `tournament_registration` metadata → update payment_status=paid
+  - Notifications : triggerTournamentUpdate, triggerTournamentNextMatch, triggerTournamentRegistration
+  - Section "Tournois" sur page accueil (top 3 registration_open/in_progress)
 
 ### PHASE 8 — Engagement & Retention (2 semaines)
 > Maximiser l'utilisation recurrente de l'app.
@@ -319,6 +334,6 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 ---
 
 ## Priorites immediates (prochaine session)
-1. Tournois & Competition (Phase 7) — schema, CRUD, brackets, inscriptions
-2. Tests E2E Playwright sur les flows critiques (auth, match, chat, booking)
-3. Photos club (Supabase Storage) et moderation avis
+1. Tests E2E Playwright sur les flows critiques (auth, match, chat, booking, tournoi)
+2. Photos club (Supabase Storage) et moderation avis
+3. Engagement & Retention (Phase 8) — notifications intelligentes, gamification, ameliorations chat

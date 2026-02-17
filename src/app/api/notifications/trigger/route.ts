@@ -7,6 +7,9 @@ import {
   triggerMatchCompleted,
   triggerGroupJoin,
   triggerNewChatMessage,
+  triggerTournamentUpdate,
+  triggerTournamentNextMatch,
+  triggerTournamentRegistration,
 } from '@/lib/notifications/triggers';
 
 type TriggerAction =
@@ -15,7 +18,10 @@ type TriggerAction =
   | 'match_cancelled'
   | 'match_completed'
   | 'group_join'
-  | 'new_chat_message';
+  | 'new_chat_message'
+  | 'tournament_update'
+  | 'tournament_next_match'
+  | 'tournament_registration';
 
 interface TriggerPayload {
   action: TriggerAction;
@@ -23,8 +29,13 @@ interface TriggerPayload {
     match_id?: string;
     group_id?: string;
     conversation_id?: string;
+    tournament_id?: string;
     user_id?: string;
+    user_ids?: string[];
     preview?: string;
+    message?: string;
+    captain_name?: string;
+    partner_id?: string;
   };
 }
 
@@ -89,6 +100,25 @@ async function executeTrigger(
     case 'new_chat_message':
       if (data.conversation_id) {
         await triggerNewChatMessage(data.conversation_id, userId, data.preview ?? '');
+      }
+      break;
+    case 'tournament_update':
+      if (data.tournament_id) {
+        await triggerTournamentUpdate(data.tournament_id, data.message ?? 'Mise a jour du tournoi');
+      }
+      break;
+    case 'tournament_next_match':
+      if (data.tournament_id && data.user_ids) {
+        await triggerTournamentNextMatch(data.tournament_id, data.user_ids);
+      }
+      break;
+    case 'tournament_registration':
+      if (data.tournament_id && data.partner_id) {
+        await triggerTournamentRegistration(
+          data.tournament_id,
+          data.partner_id,
+          data.captain_name ?? 'Un joueur',
+        );
       }
       break;
     default:
