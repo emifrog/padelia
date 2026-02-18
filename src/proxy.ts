@@ -8,8 +8,9 @@ export async function proxy(request: NextRequest) {
 
   const cspHeader = [
     "default-src 'self'",
-    // unsafe-eval required by Mapbox GL JS (WebGL shader compilation) and React dev tools
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''} https://js.stripe.com https://api.mapbox.com`,
+    // nonce for Next.js inline scripts; unsafe-inline as fallback for older browsers (ignored when nonce is present)
+    // unsafe-eval required by Mapbox GL JS (WebGL shader compilation)
+    `script-src 'self' 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://api.mapbox.com`,
     "style-src 'self' 'unsafe-inline' https://api.mapbox.com https://fonts.googleapis.com",
     "img-src 'self' data: blob: https://*.supabase.co https://*.mapbox.com https://*.stripe.com",
     "font-src 'self' https://fonts.gstatic.com",
