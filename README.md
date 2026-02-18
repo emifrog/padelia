@@ -2,7 +2,7 @@
 
 **Joue mieux, plus souvent, avec les bons partenaires.**
 
-Padelia est une Progressive Web App (PWA) mobile-first pour les joueurs de padel. Matching intelligent, gestion de matchs, chat en temps reel, groupes, carte interactive et suivi de progression.
+Padelia est une Progressive Web App (PWA) mobile-first pour les joueurs de padel. Matching intelligent, gestion de matchs, chat en temps reel, groupes, clubs, tournois, carte interactive et suivi de progression.
 
 > **Live** : [padelia-beta.vercel.app](https://padelia-beta.vercel.app)
 
@@ -31,7 +31,8 @@ Score composite sur 100 points :
 - Inscription / desinscription des joueurs
 - Saisie des scores (jusqu'a 3 sets) et finalisation
 - Calcul ELO automatique post-match
-- Filtres par type avec recherche texte
+- Peer feedback post-match (etoiles + ajustement niveau)
+- Filtres par type avec recherche texte et pagination cursor-based
 
 ### Systeme de Classement
 - Systeme hybride Elo-like (score 1.0 a 10.0)
@@ -41,7 +42,7 @@ Score composite sur 100 points :
 
 ### Statistiques & Progression
 - Dashboard : niveau, win rate, serie en cours
-- Historique des 20 derniers matchs
+- Historique des matchs avec pagination
 - Meilleurs partenaires
 - Classements generaux et par niveau
 
@@ -49,28 +50,53 @@ Score composite sur 100 points :
 - Conversations directes et de groupe
 - Messages en temps reel via Supabase Realtime
 - Indicateurs de non-lus et badges
-- Bulles de message avec gradient
+- Pagination scroll infini (30 messages par page)
 
 ### Groupes / Communautes
 - Creation de groupe (public, prive, sur invitation)
 - Gestion des membres et des roles (admin, moderateur, membre)
 - Decouverte de groupes publics
 
+### Clubs & Terrains
+- Annuaire clubs avec recherche par ville, nom et note
+- Detail club : info, terrains, horaires, avis
+- Systeme d'avis (etoiles 1-5 + commentaire, recalcul automatique)
+- Reservation de terrains : grille disponibilites, flow 4 etapes, paiement Stripe
+- Annulation avec politique de remboursement (>24h = remboursement complet)
+- Dashboard club : stats (revenue, remplissage, bookings, note), timeline, vue semaine
+- Section "Mes reservations" dans le profil
+
+### Tournois & Competition
+- CRUD tournois (brouillon, inscriptions ouvertes/fermees, en cours, termine)
+- Inscription en duo : flow 3 etapes (nom equipe, choix partenaire, confirmation)
+- Paiement Stripe pour les tournois payants
+- Generation automatique de brackets eliminatoire (single elimination)
+- Gestion des byes pour top seeds, shuffle des non-seeded
+- Visualisation brackets CSS pure (scroll horizontal, colonnes par round)
+- Saisie des scores par l'organisateur, avancement automatique des vainqueurs
+- Detection automatique de la finale → statut "termine"
+- Retrait avec remboursement Stripe si deadline non depassee
+
 ### Carte Interactive
 - Carte Mapbox plein ecran
 - Marqueurs clubs (navy) et joueurs (vert)
 - Geolocalisation du joueur
 - Bascule entre couches clubs/joueurs
+- Lien direct vers la page club depuis les popups
 
 ### Paiements & Abonnements
 - Integration Stripe (Checkout, Billing Portal, Webhooks)
 - Plan gratuit : 3 matchs/mois, matching basique
 - Plan Premium (5,99EUR/mois ou 49,99EUR/an) : matching illimite, stats avancees, classements
+- Paiement reservations de terrains
+- Paiement inscriptions tournois
 
-### Notifications Push
+### Notifications
 - Web Push API avec cles VAPID
 - Service Worker pour reception en arriere-plan
-- Emails transactionnels via Resend
+- Emails transactionnels via Resend (bienvenue, match termine)
+- Auto-triggers : match join/leave/cancel/complete, groupe, chat (debounce 30s), tournoi
+- Rappel automatique 75min avant match (Vercel Cron)
 
 ### PWA
 - Manifest avec icones, raccourcis et mode standalone
@@ -83,7 +109,7 @@ Score composite sur 100 points :
 
 | Categorie | Technologie |
 |-----------|------------|
-| Framework | Next.js 15 (App Router) + React 19 + TypeScript 5.6+ |
+| Framework | Next.js 16 (App Router) + React 19 + TypeScript 5.6+ |
 | Backend | Supabase (Auth, PostgreSQL, Realtime, Storage) |
 | UI | Tailwind CSS 4 + shadcn/ui + Framer Motion |
 | State | TanStack Query (serveur) + Zustand (client) |
@@ -93,7 +119,48 @@ Score composite sur 100 points :
 | Chat | Supabase Realtime (WebSocket channels) |
 | Notifications | Web Push API + Resend (emails) |
 | PWA | Service Worker custom + Serwist |
+| Tests | Vitest (142 tests) + Playwright (113 tests E2E) |
 | Deploy | Vercel |
+
+---
+
+## Qualite & Securite
+
+- **CSP durcie** : pas de `unsafe-inline` dans script-src, directives `base-uri`, `form-action`, `object-src none`
+- **Headers securite** : HSTS, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy
+- **Rate limiting** sur les routes API sensibles (mutations)
+- **RLS** (Row-Level Security) active sur toutes les tables Supabase
+- **Validation Zod** sur tous les formulaires et routes API
+- **TypeScript strict** : zero `as any`, interfaces typees pour Supabase joins et Stripe SDK v20
+- **Try/catch** sur 17/17 routes API avec logs structures
+- **Accessibilite WCAG** : aria-label sur boutons icon-only et inputs, aria-hidden sur icones decoratives, role=tablist/tab + aria-selected sur filtres, aria-pressed sur toggles
+- **Admin client centralise** (`lib/supabase/admin.ts`) remplacant 11 fonctions inline
+
+---
+
+## Tests
+
+### Tests Unitaires (Vitest) — 142 tests
+- `calculate-match-score.test.ts` (22 tests) : haversine, score composite, poids
+- `calculate-elo.test.ts` (12 tests) : K-factor, margin, conservation, underdog
+- `reliability.test.ts` (15 tests) : events, bornes, precision
+- `schemas.test.ts` (56 tests) : 5 schemas Zod, valid/invalid/boundary
+- `bracket-generator.test.ts` (37 tests) : single elimination, byes, seeds, cas limites
+
+### Tests E2E (Playwright) — 113 tests
+- `auth.spec.ts` : login, register, onboarding, redirects (12 tests)
+- `match.spec.ts` : CRUD match, detail, cancel, navigation (8 tests)
+- `chat.spec.ts` : conversations, new conversation, send message (7 tests)
+- `booking.spec.ts` : clubs, detail, booking flow, reservations (7 tests)
+- `tournament.spec.ts` : CRUD tournoi, tabs, registration, pagination (11 tests)
+- `navigation.spec.ts` : bottom nav, all sections, 404, PWA (12 tests)
+- 2 projets : chromium (desktop) + mobile (iPhone 14)
+
+```bash
+npm test              # Vitest
+npm run test:e2e      # Playwright
+npm run test:e2e:ui   # Playwright UI mode
+```
 
 ---
 
@@ -121,7 +188,23 @@ npm install
 cp .env.local.example .env.local
 ```
 
-Renseigner les variables dans `.env.local` (voir `.env.local.example` pour la liste complete).
+Renseigner les variables dans `.env.local` :
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+NEXT_PUBLIC_MAPBOX_TOKEN
+NEXT_PUBLIC_VAPID_PUBLIC_KEY
+VAPID_PRIVATE_KEY
+RESEND_API_KEY
+CRON_SECRET
+NEXT_PUBLIC_APP_URL
+NEXT_PUBLIC_APP_NAME
+```
 
 ### Base de Donnees
 
@@ -133,6 +216,7 @@ supabase db push
 
 # Ou manuellement via le SQL Editor de Supabase
 # Copier le contenu de supabase/schema.sql
+# Puis supabase/migrations/20260217_add_tournaments.sql
 ```
 
 ### Lancement
@@ -142,6 +226,8 @@ npm run dev       # Developpement (Turbopack)
 npm run build     # Build production
 npm start         # Serveur production
 npm run lint      # ESLint
+npm test          # Tests unitaires (Vitest)
+npm run test:e2e  # Tests E2E (Playwright)
 ```
 
 L'application est accessible sur `http://localhost:3000`.
@@ -169,21 +255,15 @@ Le projet utilise Next.js App Router avec deux groupes de routes :
 - TanStack Query avec `staleTime: 5min` pour le cache client
 - `React.memo` sur les composants de liste (MatchCard, PlayerSuggestionCard, BottomNav)
 - `Suspense` boundaries pour le rendu progressif
+- `next/image` pour toutes les images avec optimisation automatique
+- Dynamic imports pour les composants lourds (carte, brackets)
 - Font `display: 'swap'` pour eviter le FOIT
-
-### Securite
-
-- Row-Level Security (RLS) sur toutes les tables Supabase
-- Middleware de session pour la persistence auth
-- Validation Zod sur tous les formulaires
-- Verification de signature Stripe pour les webhooks
-- Service Role Key uniquement cote serveur
 
 ---
 
 ## Base de Donnees
 
-### Tables Principales
+### Tables (17)
 
 | Table | Description |
 |-------|------------|
@@ -201,6 +281,9 @@ Le projet utilise Next.js App Router avec deux groupes de routes :
 | `notifications` | Notifications in-app |
 | `player_stats` | Stats detaillees par joueur |
 | `club_reviews` | Avis sur les clubs |
+| `tournaments` | Tournois (format, statut, inscriptions, dates) |
+| `tournament_teams` | Equipes inscrites (duo, captain, seed, paiement) |
+| `tournament_brackets` | Matchs de bracket (round, position, scores, winner) |
 
 ---
 
@@ -233,13 +316,14 @@ Le projet utilise Next.js App Router avec deux groupes de routes :
 - [x] **Phase 2** : CRUD matchs, resultats, ELO, stats, classements
 - [x] **Phase 3** : Chat realtime, groupes, carte Mapbox
 - [x] **Phase 4** : Stripe, notifications push, PWA, design polish
+- [x] **Phase 5** : Notifications auto-triggers, tests (142 Vitest + 113 Playwright), pagination cursor-based, peer feedback
+- [x] **Phase 6** : Annuaire clubs, avis, reservation terrains + Stripe, dashboard club
+- [x] **Phase 7** : Tournois CRUD, inscription duo + Stripe, brackets eliminatoire, saisie scores
+- [x] **Hardening** : Securite (CSP, headers, rate limiting), accessibilite WCAG, typage strict, factorisation code
 
 ### A venir
-- [ ] **Phase 5 — Solidification** : Notifications auto-triggers, tests (Vitest + Playwright), pagination, peer feedback post-match
-- [ ] **Phase 6 — Clubs & Terrains** : Pages clubs, avis, reservation de terrains, dashboard club
-- [ ] **Phase 7 — Tournois** : Schema, CRUD, brackets, inscriptions
 - [ ] **Phase 8 — Engagement** : Gamification (badges), ameliorations chat (images, reactions, presence), notifications intelligentes
-- [ ] **Phase 9 — Distribution** : Stores mobiles (Capacitor), SEO, analytics, i18n
+- [ ] **Phase 9 — Distribution** : Stores mobiles (Capacitor), SEO, analytics (Sentry, Vercel Analytics), i18n
 - [ ] **Phase 10 — Scale** : Stripe Connect, offre club avancee, API publique
 
 ---

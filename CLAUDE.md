@@ -6,7 +6,7 @@ Padelia est une PWA mobile-first de reference pour les joueurs de padel. Clone a
 **Promesse** : "Joue mieux, plus souvent, avec les bons partenaires."
 
 ## Stack Technique
-- **Framework** : Next.js 15 (App Router) + React 19 + TypeScript 5.6+
+- **Framework** : Next.js 16 (App Router) + React 19 + TypeScript 5.6+
 - **Backend** : Supabase (Auth, PostgreSQL, Realtime, Storage, Edge Functions)
 - **UI** : Tailwind CSS 4 + shadcn/ui + Framer Motion
 - **State** : TanStack Query (serveur) + Zustand (client)
@@ -68,9 +68,11 @@ src/
 - **Toujours** : TypeScript strict, pas de `any`, Zod pour toute validation
 - **Style** : Tailwind utility classes, pas de CSS custom sauf necessite absolue
 - **Exports** : Named exports par defaut (sauf pages Next.js)
-- **Erreurs** : Error boundaries par section, toast pour feedback utilisateur
+- **Erreurs** : Error boundaries par section, toast pour feedback utilisateur, try/catch sur toutes les routes API
 - **Langue** : UI en francais, code en anglais
 - **Performance** : React.memo sur composants listes, TanStack Query pour cache, Promise.all pour queries paralleles, pas de N+1
+- **Accessibilite** : aria-label sur boutons icon-only, aria-hidden sur icones decoratives, role=tablist/tab sur filtres, aria-pressed sur toggles
+- **Securite** : CSP durcie, headers securite complets, rate limiting, RLS sur toutes les tables, admin client centralise (`lib/supabase/admin.ts`)
 
 ## Base de Donnees (resume)
 17 tables : profiles, clubs, courts, groups, group_members, matches, match_participants, bookings, conversations, conversation_members, messages, notifications, player_stats, club_reviews, tournaments, tournament_teams, tournament_brackets
@@ -147,10 +149,22 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 | Mes reservations | FAIT | `/profil/reservations` a venir/passees, annulation avec hook |
 | Tournois & Competition | FAIT | CRUD, inscription duo + Stripe, bracket eliminatoire, saisie scores, avancement auto |
 | Tests E2E (Playwright) | FAIT | 113 tests : auth, match, chat, booking, tournoi, navigation, PWA (chromium + mobile) |
+| Audit technique & hardening | FAIT | Securite, accessibilite, typage strict, factorisation code, CSP |
+
+### Qualite & Hardening (post-Phase 7)
+| Chantier | Statut | Details |
+|----------|--------|---------|
+| Securite (P0) | FAIT | Headers securite (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy), CSP durcie (suppression unsafe-inline scripts, base-uri, form-action, object-src none), rate limiting API, auth checks exhaustifs |
+| Typage strict (P1) | FAIT | Suppression de tous les `as any` dans les API routes, interfaces typees pour Supabase joins (ParticipantWithProfile, JoinedClub), types Stripe v20 (Stripe.Charge, Stripe.Subscription), 0 eslint-disable |
+| Factorisation code (P2) | FAIT | Client admin centralise `lib/supabase/admin.ts` remplacant 11 fonctions inline, try/catch sur 17/17 routes API |
+| Accessibilite WCAG (P2) | FAIT | aria-label sur boutons icon-only (16 fichiers), aria-hidden sur icones decoratives, role=tablist/tab + aria-selected sur filtres, aria-pressed sur toggles, aria-label sur inputs de recherche/score/textarea |
+| Page 404 | FAIT | Page personnalisee avec navigation retour |
+| Optimisation images | FAIT | next/image pour toutes les images, dynamic imports pour composants lourds |
 
 ### Fonctionnalites MANQUANTES
 | Module | Priorite | Effort estime |
 |--------|----------|--------------|
+| Sentry / monitoring | MOYENNE | 1 jour |
 | Page offline (PWA fallback) | BASSE | 2 jours |
 | Images dans le chat | BASSE | 1 semaine |
 
@@ -335,6 +349,7 @@ NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_NAME
 ---
 
 ## Priorites immediates (prochaine session)
-1. Engagement & Retention (Phase 8) — notifications intelligentes, gamification, ameliorations chat
-2. Photos club (Supabase Storage) et moderation avis
-3. Distribution & Croissance (Phase 9) — SEO, landing, analytics, i18n
+1. Sentry / monitoring (error tracking production)
+2. Engagement & Retention (Phase 8) — notifications intelligentes, gamification, ameliorations chat
+3. Photos club (Supabase Storage) et moderation avis
+4. Distribution & Croissance (Phase 9) — SEO, landing, analytics, i18n
