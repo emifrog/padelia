@@ -21,8 +21,8 @@ const clientSchema = z.object({
   NEXT_PUBLIC_APP_NAME: z.string().min(1),
 });
 
-// Optional env vars (won't fail if missing)
-const optionalSchema = z.object({
+// Optional env vars (won't fail if missing, exported for reference)
+export const optionalSchema = z.object({
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   NEXT_PUBLIC_MAPBOX_TOKEN: z.string().optional(),
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),

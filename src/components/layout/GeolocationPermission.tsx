@@ -56,7 +56,6 @@ export default function GeolocationPermission() {
     }
 
     check();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dismissed]);
 
   async function captureAndSave() {

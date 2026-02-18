@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MapPin } from 'lucide-react';
 import StarRating from '@/components/club/StarRating';
 import { AMENITY_LABELS } from '@/lib/constants/club';
@@ -31,9 +32,11 @@ export default memo(function ClubCard({ club }: Props) {
         {/* Logo */}
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-green-subtle text-[24px]">
           {club.logo_url ? (
-            <img
+            <Image
               src={club.logo_url}
               alt={club.name}
+              width={56}
+              height={56}
               className="h-14 w-14 rounded-xl object-cover"
             />
           ) : (

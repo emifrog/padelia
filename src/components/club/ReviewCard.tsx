@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import Image from 'next/image';
 import StarRating from '@/components/club/StarRating';
 
 export interface ReviewCardData {
@@ -27,9 +28,11 @@ export default memo(function ReviewCard({ review }: Props) {
         {/* Avatar */}
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-subtle text-[14px] font-bold text-green-padel">
           {review.reviewer_avatar ? (
-            <img
+            <Image
               src={review.reviewer_avatar}
               alt={review.reviewer_name}
+              width={36}
+              height={36}
               className="h-9 w-9 rounded-full object-cover"
             />
           ) : (

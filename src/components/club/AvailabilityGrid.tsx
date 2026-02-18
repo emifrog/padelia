@@ -25,14 +25,27 @@ export default function AvailabilityGrid({ clubId, courtId, date, hourlyRate, op
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    setSelected(null);
+    let cancelled = false;
 
     fetch(`/api/clubs/${clubId}/availability?court_id=${courtId}&date=${date}`)
       .then((res) => res.json())
-      .then((data) => setOccupied(data.occupied ?? []))
-      .catch(() => setOccupied([]))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) {
+          setOccupied(data.occupied ?? []);
+          setSelected(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOccupied([]);
+          setSelected(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [clubId, courtId, date]);
 
   // Generate time slots from opening hours

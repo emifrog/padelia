@@ -1,8 +1,8 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import Link from 'next/link';
-import { CalendarDays, Clock, MapPin } from 'lucide-react';
+import { CalendarDays, Clock } from 'lucide-react';
 import { BOOKING_STATUS_LABELS, BOOKING_STATUS_COLORS } from '@/lib/constants/club';
 import type { BookingStatus } from '@/types';
 
@@ -24,11 +24,14 @@ interface Props {
 }
 
 export default memo(function BookingCard({ booking, onCancel, cancelling }: Props) {
-  const startDate = new Date(booking.start_time);
-  const endDate = new Date(booking.end_time);
-  const isUpcoming = startDate > new Date() && booking.status === 'confirmed';
-  const hoursUntilStart = (startDate.getTime() - Date.now()) / (1000 * 60 * 60);
-  const canCancel = isUpcoming && hoursUntilStart > 24;
+  const startDate = useMemo(() => new Date(booking.start_time), [booking.start_time]);
+  const endDate = useMemo(() => new Date(booking.end_time), [booking.end_time]);
+  const canCancel = useMemo(() => {
+    const now = new Date();
+    const upcoming = startDate > now && booking.status === 'confirmed';
+    const hoursUntilStart = (startDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return upcoming && hoursUntilStart > 24;
+  }, [startDate, booking.status]);
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-padel">

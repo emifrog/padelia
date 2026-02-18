@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, ChevronLeft, Search, UserPlus, Check } from 'lucide-react';
+import { Loader2, ChevronLeft, Search, UserPlus } from 'lucide-react';
 
 interface PlayerResult {
   id: string;
@@ -195,9 +196,11 @@ export default function InscrireTournoiPage() {
                   }`}
                 >
                   {player.avatar_url ? (
-                    <img
+                    <Image
                       src={player.avatar_url}
                       alt={player.full_name}
+                      width={40}
+                      height={40}
                       className="h-10 w-10 rounded-full object-cover"
                     />
                   ) : (
@@ -253,9 +256,11 @@ export default function InscrireTournoiPage() {
                 <span className="text-[12px] font-medium uppercase text-gray-400">Partenaire</span>
                 <div className="flex items-center gap-2">
                   {selectedPartner.avatar_url ? (
-                    <img
+                    <Image
                       src={selectedPartner.avatar_url}
                       alt={selectedPartner.full_name}
+                      width={24}
+                      height={24}
                       className="h-6 w-6 rounded-full object-cover"
                     />
                   ) : (

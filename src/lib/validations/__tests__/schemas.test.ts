@@ -128,7 +128,8 @@ describe('profileSchema', () => {
   });
 
   it('accepts missing bio (optional)', () => {
-    const { bio: _, ...noBio } = validProfile;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { bio: _bio, ...noBio } = validProfile;
     const result = profileSchema.safeParse(noBio);
     expect(result.success).toBe(true);
   });

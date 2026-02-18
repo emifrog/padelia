@@ -123,7 +123,6 @@ export function generateSingleEliminationBracket(
     const slotA = slots[(pos - 1) * 2];
     const slotB = slots[(pos - 1) * 2 + 1];
     const hasOnlyOne = (slotA === null) !== (slotB === null);
-    const hasBoth = slotA !== null && slotB !== null;
 
     entries.push({
       round: 1,

@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/incompatible-library -- React Hook Form watch() is incompatible with React Compiler memoization */
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -43,6 +44,12 @@ export default function CreerMatchPage() {
       cost_per_player: 0,
     },
   });
+
+  const formValues = watch();
+  const currentMatchType = formValues.match_type;
+  const currentVisibility = formValues.visibility;
+  const currentDuration = formValues.duration_minutes;
+  const currentMaxPlayers = formValues.max_players;
 
   async function onSubmit(data: CreateMatchData) {
     setLoading(true);
@@ -130,7 +137,7 @@ export default function CreerMatchPage() {
                 type="button"
                 onClick={() => setValue('match_type', key, { shouldValidate: true })}
                 className={`rounded-xl border px-3 py-2.5 text-sm transition-colors ${
-                  watch('match_type') === key
+                  currentMatchType === key
                     ? 'border-primary bg-primary/10 text-primary font-semibold'
                     : 'border-border hover:border-primary/50'
                 }`}
@@ -151,7 +158,7 @@ export default function CreerMatchPage() {
                 type="button"
                 onClick={() => setValue('visibility', key, { shouldValidate: true })}
                 className={`rounded-xl border px-3 py-2.5 text-sm transition-colors ${
-                  watch('visibility') === key
+                  currentVisibility === key
                     ? 'border-primary bg-primary/10 text-primary font-semibold'
                     : 'border-border hover:border-primary/50'
                 }`}
@@ -187,7 +194,7 @@ export default function CreerMatchPage() {
                 type="button"
                 onClick={() => setValue('duration_minutes', value, { shouldValidate: true })}
                 className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
-                  watch('duration_minutes') === value
+                  currentDuration === value
                     ? 'border-primary bg-primary/10 text-primary font-semibold'
                     : 'border-border hover:border-primary/50'
                 }`}
@@ -223,7 +230,7 @@ export default function CreerMatchPage() {
                 type="button"
                 onClick={() => setValue('max_players', n as 2 | 4, { shouldValidate: true })}
                 className={`flex-1 rounded-xl border px-4 py-3 text-center transition-colors ${
-                  watch('max_players') === n
+                  currentMaxPlayers === n
                     ? 'border-primary bg-primary/10 text-primary font-semibold'
                     : 'border-border hover:border-primary/50'
                 }`}

@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/incompatible-library -- React Hook Form watch() is incompatible with React Compiler memoization */
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -33,7 +34,12 @@ export default function EditProfilePage() {
     resolver: zodResolver(profileSchema),
   });
 
-  const currentLevel = watch('level');
+  const formValues = watch();
+  const currentLevel = formValues.level;
+  const currentDominantHand = formValues.dominant_hand;
+  const currentPreferredSide = formValues.preferred_side;
+  const currentPlayStyle = formValues.play_style;
+  const currentPlayerGoal = formValues.player_goal;
 
   // Load profile
   useEffect(() => {
@@ -191,7 +197,7 @@ export default function EditProfilePage() {
                     type="button"
                     onClick={() => setValue('dominant_hand', hand, { shouldDirty: true })}
                     className={`flex-1 rounded-xl border px-3 py-2.5 text-sm transition-colors ${
-                      watch('dominant_hand') === hand
+                      currentDominantHand === hand
                         ? 'border-primary bg-primary/10 text-primary font-semibold'
                         : 'border-border hover:border-primary/50'
                     }`}
@@ -211,7 +217,7 @@ export default function EditProfilePage() {
                     type="button"
                     onClick={() => setValue('preferred_side', key as 'gauche' | 'droite' | 'les_deux', { shouldDirty: true })}
                     className={`rounded-xl border px-3 py-2.5 text-xs transition-colors ${
-                      watch('preferred_side') === key
+                      currentPreferredSide === key
                         ? 'border-primary bg-primary/10 text-primary font-semibold'
                         : 'border-border hover:border-primary/50'
                     }`}
@@ -231,7 +237,7 @@ export default function EditProfilePage() {
                     type="button"
                     onClick={() => setValue('play_style', key as 'offensif' | 'defensif' | 'mixte' | 'polyvalent', { shouldDirty: true })}
                     className={`rounded-xl border px-3 py-2.5 text-sm transition-colors ${
-                      watch('play_style') === key
+                      currentPlayStyle === key
                         ? 'border-primary bg-primary/10 text-primary font-semibold'
                         : 'border-border hover:border-primary/50'
                     }`}
@@ -251,7 +257,7 @@ export default function EditProfilePage() {
                     type="button"
                     onClick={() => setValue('player_goal', key as 'loisir' | 'progression' | 'competition' | 'social', { shouldDirty: true })}
                     className={`rounded-xl border px-3 py-2.5 text-sm transition-colors ${
-                      watch('player_goal') === key
+                      currentPlayerGoal === key
                         ? 'border-primary bg-primary/10 text-primary font-semibold'
                         : 'border-border hover:border-primary/50'
                     }`}

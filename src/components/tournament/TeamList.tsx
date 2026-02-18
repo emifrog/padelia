@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import Image from 'next/image';
 import { Users, Shield } from 'lucide-react';
 
 interface TeamWithPlayers {
@@ -61,9 +62,11 @@ export default memo(function TeamList({ teams }: Props) {
               {team.profiles.map((p, i) => (
                 <div key={i} className="flex items-center gap-1">
                   {p.avatar_url ? (
-                    <img
+                    <Image
                       src={p.avatar_url}
                       alt={p.full_name}
+                      width={20}
+                      height={20}
                       className="h-5 w-5 rounded-full object-cover"
                     />
                   ) : (

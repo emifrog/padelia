@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import BracketMatch from './BracketMatch';
-import { getRoundLabel, calculateTotalRounds, nextPowerOf2 } from '@/lib/tournament/bracket-generator';
+import { getRoundLabel } from '@/lib/tournament/bracket-generator';
 import type { TournamentBracket } from '@/types';
 
 interface TeamInfo {

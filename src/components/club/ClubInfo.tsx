@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { MapPin, Phone, Mail, Globe } from 'lucide-react';
 import StarRating from '@/components/club/StarRating';
 import { AMENITY_LABELS, AMENITY_ICONS } from '@/lib/constants/club';
@@ -13,10 +14,11 @@ export default function ClubInfo({ club }: Props) {
       {/* Cover */}
       <div className="relative h-44 overflow-hidden rounded-xl">
         {club.cover_url ? (
-          <img
+          <Image
             src={club.cover_url}
             alt={club.name}
-            className="h-full w-full object-cover"
+            fill
+            className="object-cover"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-green-padel/30 to-navy/30">
@@ -27,9 +29,11 @@ export default function ClubInfo({ club }: Props) {
         {/* Logo overlay */}
         {club.logo_url && (
           <div className="absolute -bottom-6 left-4">
-            <img
+            <Image
               src={club.logo_url}
               alt={club.name}
+              width={64}
+              height={64}
               className="h-16 w-16 rounded-xl border-4 border-white object-cover shadow-padel"
             />
           </div>
