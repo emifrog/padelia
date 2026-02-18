@@ -136,6 +136,7 @@ export default function ReviewForm({ clubId }: Props) {
         {...register('comment')}
         placeholder="Ton commentaire (optionnel)..."
         rows={3}
+        aria-label="Commentaire sur le club"
         className="mb-3 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-[13px] placeholder:text-gray-400 focus:border-green-padel focus:outline-none focus:ring-1 focus:ring-green-padel"
       />
       {errors.comment && (

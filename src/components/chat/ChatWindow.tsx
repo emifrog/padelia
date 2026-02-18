@@ -68,8 +68,8 @@ export default function ChatWindow({ conversationId, userId, displayName, conver
     <div className="flex h-[calc(100dvh-8rem)] flex-col -mx-4 -mt-4">
       {/* Header */}
       <div className="flex items-center gap-2 border-b px-3 py-2.5">
-        <Button variant="ghost" size="icon" className="shrink-0" asChild>
-          <Link href="/chat"><ChevronLeft className="h-5 w-5" /></Link>
+        <Button variant="ghost" size="icon" className="shrink-0" aria-label="Retour aux conversations" asChild>
+          <Link href="/chat"><ChevronLeft className="h-5 w-5" aria-hidden="true" /></Link>
         </Button>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{displayName}</p>

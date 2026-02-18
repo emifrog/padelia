@@ -57,7 +57,7 @@ export default memo(function MatchCard({ match }: Props) {
           {/* Date + location */}
           <div className="mt-1 flex flex-wrap items-center gap-3 text-[12px] text-gray-400">
             <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
+              <Clock className="h-3 w-3" aria-hidden="true" />
               {date.toLocaleDateString('fr-FR', {
                 weekday: 'short',
                 day: 'numeric',
@@ -70,7 +70,7 @@ export default memo(function MatchCard({ match }: Props) {
             </span>
             {match.location_name && (
               <span className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
+                <MapPin className="h-3 w-3" aria-hidden="true" />
                 <span className="truncate">{match.location_name}</span>
               </span>
             )}

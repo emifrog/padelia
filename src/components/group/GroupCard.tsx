@@ -40,7 +40,7 @@ export default function GroupCard({ group }: GroupCardProps) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <p className="truncate text-[14px] font-bold text-navy">{group.name}</p>
-          <VisibilityIcon className="h-3.5 w-3.5 shrink-0 text-gray-300" />
+          <VisibilityIcon className="h-3.5 w-3.5 shrink-0 text-gray-300" aria-hidden="true" />
         </div>
         {group.description && (
           <p className="truncate text-[12px] text-gray-400">
@@ -49,7 +49,7 @@ export default function GroupCard({ group }: GroupCardProps) {
         )}
         <div className="mt-1 flex items-center gap-3 text-[11px] text-gray-400">
           <span className="flex items-center gap-0.5">
-            <Users className="h-3 w-3" />
+            <Users className="h-3 w-3" aria-hidden="true" />
             {group.member_count}/{group.max_members}
           </span>
           {group.city && <span>{group.city}</span>}
@@ -61,7 +61,7 @@ export default function GroupCard({ group }: GroupCardProps) {
         </div>
       </div>
 
-      <ChevronRight className="h-4 w-4 shrink-0 text-gray-300" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-gray-300" aria-hidden="true" />
     </Link>
   );
 }

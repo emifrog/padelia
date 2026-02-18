@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe/config';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import Stripe from 'stripe';
-
-// Use service role client for webhook (no user context)
-function getAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -33,7 +25,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  const supabase = getAdminClient();
+  const supabase = createAdminClient();
 
   try {
     switch (event.type) {

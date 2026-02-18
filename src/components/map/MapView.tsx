@@ -262,8 +262,9 @@ export default function MapView() {
           variant="secondary"
           className="h-9 w-9 rounded-full shadow-md"
           onClick={recenter}
+          aria-label="Recentrer sur ma position"
         >
-          <Locate className="h-4 w-4" />
+          <Locate className="h-4 w-4" aria-hidden="true" />
         </Button>
 
         {/* Layer toggle */}
@@ -271,6 +272,8 @@ export default function MapView() {
           <button
             type="button"
             onClick={() => setShowClubs(!showClubs)}
+            aria-pressed={showClubs}
+            aria-label="Afficher les clubs"
             className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-medium transition-colors ${
               showClubs ? 'bg-navy text-white' : 'text-muted-foreground hover:bg-accent'
             }`}
@@ -280,6 +283,8 @@ export default function MapView() {
           <button
             type="button"
             onClick={() => setShowPlayers(!showPlayers)}
+            aria-pressed={showPlayers}
+            aria-label="Afficher les joueurs"
             className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-medium transition-colors ${
               showPlayers ? 'bg-green-padel text-white' : 'text-muted-foreground hover:bg-accent'
             }`}
@@ -293,7 +298,7 @@ export default function MapView() {
       <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between rounded-xl bg-background/95 px-3 py-2 shadow-md backdrop-blur">
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
-            <Layers className="h-3.5 w-3.5" />
+            <Layers className="h-3.5 w-3.5" aria-hidden="true" />
             {clubs.length} clubs
           </span>
           <span>·</span>

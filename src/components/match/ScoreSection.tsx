@@ -91,7 +91,7 @@ export default function ScoreSection({ matchId }: Props) {
   return (
     <div className="space-y-4">
       <h2 className="flex items-center gap-2 font-semibold">
-        <Trophy className="h-4 w-4 text-primary" />
+        <Trophy className="h-4 w-4 text-primary" aria-hidden="true" />
         Saisir le résultat
       </h2>
 
@@ -109,6 +109,7 @@ export default function ScoreSection({ matchId }: Props) {
                   value={set.score_a}
                   onChange={(e) => updateSet(i, 'score_a', Number(e.target.value))}
                   className="h-10 w-14 text-center text-lg font-bold"
+                  aria-label={`Score équipe A, set ${i + 1}`}
                 />
               </div>
               <span className="mt-5 text-muted-foreground">—</span>
@@ -121,6 +122,7 @@ export default function ScoreSection({ matchId }: Props) {
                   value={set.score_b}
                   onChange={(e) => updateSet(i, 'score_b', Number(e.target.value))}
                   className="h-10 w-14 text-center text-lg font-bold"
+                  aria-label={`Score équipe B, set ${i + 1}`}
                 />
               </div>
             </div>

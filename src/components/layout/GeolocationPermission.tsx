@@ -121,9 +121,10 @@ export default function GeolocationPermission() {
         <button
           type="button"
           onClick={dismiss}
+          aria-label="Fermer"
           className="text-muted-foreground hover:text-foreground"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
     </div>

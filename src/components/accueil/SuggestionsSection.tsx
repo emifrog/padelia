@@ -27,7 +27,7 @@ export default function SuggestionsSection() {
   if (suggestions.length === 0) {
     return (
       <div className="rounded-xl border border-dashed p-6 text-center">
-        <UserSearch className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+        <UserSearch className="mx-auto mb-2 h-8 w-8 text-muted-foreground" aria-hidden="true" />
         <p className="text-sm font-medium">Aucune suggestion</p>
         <p className="text-xs text-muted-foreground">
           Complète ton profil pour de meilleures suggestions

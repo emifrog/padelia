@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getStripe } from '@/lib/stripe/config';
 import { createBookingSchema } from '@/lib/validations/club';
 import { applyRateLimit, getRateLimitId } from '@/lib/api-utils';
@@ -11,13 +11,6 @@ interface JoinedClub {
   name: string;
   status: string;
   opening_hours: unknown;
-}
-
-function getAdmin() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
 }
 
 export async function POST(request: NextRequest) {
@@ -41,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { court_id, date, start_time, duration_minutes } = parsed.data;
-    const admin = getAdmin();
+    const admin = createAdminClient();
 
     // Fetch court + club info
     const { data: court } = await admin

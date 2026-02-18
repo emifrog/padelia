@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { sendPushNotification, type PushPayload } from '@/lib/notifications/push';
-
-// Admin client for sending notifications
-function getAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Données manquantes' }, { status: 400 });
     }
 
-    const supabase = getAdminClient();
+    const supabase = createAdminClient();
 
     // Get push tokens for target users
     const { data: profiles } = await supabase

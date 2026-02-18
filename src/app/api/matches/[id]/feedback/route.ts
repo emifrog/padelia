@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { peerFeedbackSchema } from '@/lib/validations/match';
 import { applyRateLimit, getRateLimitId } from '@/lib/api-utils';
 import { RATE_LIMITS } from '@/lib/rate-limit';
@@ -13,13 +13,6 @@ interface FeedbackInput {
   target_player_id: string;
   rating: number;
   level_feedback?: number;
-}
-
-function getAdminClient() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
 }
 
 /**
@@ -86,7 +79,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
   }
 
-  const admin = getAdminClient();
+  const admin = createAdminClient();
 
   // Save feedback: store average rating in current user's participant row
   const avgRating = Math.round(

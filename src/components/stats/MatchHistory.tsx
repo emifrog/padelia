@@ -100,7 +100,7 @@ export default function MatchHistory({ stats: initialStats }: Props) {
                 <div className={`flex items-center gap-0.5 text-xs font-medium ${
                   isPositive ? 'text-primary' : 'text-destructive'
                 }`}>
-                  {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {isPositive ? <TrendingUp className="h-3 w-3" aria-hidden="true" /> : <TrendingDown className="h-3 w-3" aria-hidden="true" />}
                   {isPositive ? '+' : ''}{change}
                 </div>
               )}

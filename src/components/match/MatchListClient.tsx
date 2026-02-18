@@ -93,19 +93,22 @@ export default function MatchListClient({ matches: initialMatches }: Props) {
     <div className="space-y-4">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         <Input
           placeholder="Chercher un match, un lieu..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10"
+          aria-label="Rechercher un match"
         />
       </div>
 
       {/* Type filter pills */}
-      <div className="flex gap-2">
+      <div className="flex gap-2" role="tablist" aria-label="Filtrer par type">
         <button
           type="button"
+          role="tab"
+          aria-selected={!typeFilter}
           onClick={() => setTypeFilter('')}
           className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-all ${
             !typeFilter
@@ -119,6 +122,8 @@ export default function MatchListClient({ matches: initialMatches }: Props) {
           <button
             key={key}
             type="button"
+            role="tab"
+            aria-selected={typeFilter === key}
             onClick={() => setTypeFilter(key)}
             className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-all ${
               typeFilter === key

@@ -22,9 +22,9 @@ interface Props {
 }
 
 function getRankIcon(index: number) {
-  if (index === 0) return <Trophy className="h-5 w-5 text-yellow-500" />;
-  if (index === 1) return <Medal className="h-5 w-5 text-gray-400" />;
-  if (index === 2) return <Medal className="h-5 w-5 text-amber-700" />;
+  if (index === 0) return <Trophy className="h-5 w-5 text-yellow-500" aria-hidden="true" />;
+  if (index === 1) return <Medal className="h-5 w-5 text-gray-400" aria-hidden="true" />;
+  if (index === 2) return <Medal className="h-5 w-5 text-amber-700" aria-hidden="true" />;
   return (
     <span className="flex h-5 w-5 items-center justify-center text-xs text-muted-foreground">
       {index + 1}

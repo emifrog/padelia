@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getStripe } from '@/lib/stripe/config';
 import { registerTeamSchema } from '@/lib/validations/tournament';
 import { applyRateLimit, getRateLimitId } from '@/lib/api-utils';
 import { RATE_LIMITS } from '@/lib/rate-limit';
-
-function getAdmin() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
 
 export async function POST(
   request: NextRequest,
@@ -20,7 +13,7 @@ export async function POST(
   try {
     const { id: tournamentId } = await params;
     const supabase = await createClient();
-    const admin = getAdmin();
+    const admin = createAdminClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {

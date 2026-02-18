@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { triggerMatchReminder } from '@/lib/notifications/triggers';
-
-function getAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
 
 /**
  * GET /api/cron/match-reminder
@@ -25,7 +18,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
   }
 
-  const supabase = getAdminClient();
+  const supabase = createAdminClient();
 
   const now = new Date();
   const endOfDay = new Date(now);
