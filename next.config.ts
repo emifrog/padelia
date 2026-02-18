@@ -45,7 +45,8 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               // unsafe-eval required by Mapbox GL JS (WebGL shader compilation)
-              "script-src 'self' 'unsafe-eval' https://js.stripe.com https://api.mapbox.com",
+              // sha256 hash required for Next.js inline hydration script
+              "script-src 'self' 'unsafe-eval' 'sha256-q/0Bi5WClO3WxHx14HAAOsb+A7r5BG540wUMXDvNEWs=' https://js.stripe.com https://api.mapbox.com",
               "style-src 'self' 'unsafe-inline' https://api.mapbox.com https://fonts.googleapis.com",
               "img-src 'self' data: blob: https://*.supabase.co https://*.mapbox.com https://*.stripe.com",
               "font-src 'self' https://fonts.gstatic.com",
